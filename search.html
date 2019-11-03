@@ -6,10 +6,20 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <meta name="author" content="dry" />
 
-        <meta name="description" content="nico&#39;s blog" />
+        <meta name="description" content="Search results for Nico&#39;sBlog blog.
+" />
         <meta property="og:type" content="article" />
         <meta name="twitter:card" content="summary">
-        <title>Nico'sBlog - Authors</title>
+
+<meta property="og:title" content="Search · Nico&#39;sBlog"/>
+<meta name="twitter:title" content="Search · Nico&#39;sBlog">
+<meta property="og:url" content="/search" />
+<meta property="og:description" content="Search results for Nico&#39;sBlog blog" />
+<meta name="twitter:description" content="Search results for Nico&#39;sBlog blog">
+<meta property="og:site_name" content="Nico&#39;sBlog" />
+<meta property="og:article:author" content="dry" />
+        <title>Search · Nico&#39;sBlog
+</title>
         <link href="//netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/css/bootstrap-combined.min.css" rel="stylesheet">
 <link rel="stylesheet" href="/theme/css/style.min.css?e83b4deb">
 
@@ -27,7 +37,7 @@
                         </a>
                         <a class="brand" href="/"><span class=site-name>Nico'sBlog</span></a>
                         <div class="nav-collapse collapse">
-                            <ul class="nav pull-left top-menu">
+                            <ul class="nav pull-right top-menu">
                                 <li >
                                     <a href=
                                        "/"
@@ -46,10 +56,9 @@
                 <div class="row-fluid">
                     <div class="span1"></div>
                     <div class="span10">
-    <h1>Authors on Nico'sBlog</h1>
-    <ul>
-        <li><a href="/author/nico.html">nico</a> (2)</li>
-    </ul>
+    <div class="span8 offset2">
+        <div id="tipue_search_content"><div id="tipue_search_loading"></div></div>
+    </div>
                     </div>
                     <div class="span1"></div>
                 </div>
@@ -71,14 +80,20 @@
     <div id="fpowered">
         Copyright (c) 2019-2019 Nico All Rights Revered
     </div>
-</footer>        <script src="//code.jquery.com/jquery.min.js"></script>
-        <script src="//netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/js/bootstrap.min.js"></script>
-        <script>
-            function validateForm(query)
-            {
-                return (query.length > 0);
-            }
-        </script>
+</footer><script src="https://cdn.bootcss.com/jquery/2.0.0/jquery.min.js"></script>
+<script src="/theme/tipuesearch/tipuesearch.packed.min.js?47f28a6d"></script>
+
+<script src="/tipuesearch_content.js"></script>
+
+<script>
+$(document).ready(function() {
+     $('#tipue_search_input').tipuesearch({
+             'mode' : 'json',
+         'show': 10,
+         'newWindow': false,
+     });
+});
+</script>
     </body>
     <!-- Theme: Elegant built for Pelican
         License : MIT -->

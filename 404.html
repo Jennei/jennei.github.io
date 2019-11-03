@@ -6,10 +6,12 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <meta name="author" content="dry" />
 
-        <meta name="description" content="nico&#39;s blog" />
+        <meta name="description" content="Page does not exist at Nico&#39;sBlog blog.
+" />
         <meta property="og:type" content="article" />
         <meta name="twitter:card" content="summary">
-        <title>Nico'sBlog - Authors</title>
+        <title>Page not found · Nico&#39;sBlog
+</title>
         <link href="//netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/css/bootstrap-combined.min.css" rel="stylesheet">
 <link rel="stylesheet" href="/theme/css/style.min.css?e83b4deb">
 
@@ -27,7 +29,7 @@
                         </a>
                         <a class="brand" href="/"><span class=site-name>Nico'sBlog</span></a>
                         <div class="nav-collapse collapse">
-                            <ul class="nav pull-left top-menu">
+                            <ul class="nav pull-right top-menu">
                                 <li >
                                     <a href=
                                        "/"
@@ -46,10 +48,42 @@
                 <div class="row-fluid">
                     <div class="span1"></div>
                     <div class="span10">
-    <h1>Authors on Nico'sBlog</h1>
-    <ul>
-        <li><a href="/author/nico.html">nico</a> (2)</li>
-    </ul>
+<div class="row-fluid">
+    <header class="page-header span10 offset2">
+    <h1>That page doesn't exist!</h1>
+    </header>
+</div>
+
+<div class="row-fluid">
+    <div class="span8 offset2">
+        <p>Sorry, but the page you are looking for cannot be found. It seems that the page you were trying to reach doesn't exist, or may be it has just moved, or it no longer exists.</p>
+        <p>The best thing to do is to use the search form or start again from the <a href="">home page</a>.</p>
+        <div class="input-append">
+            <form action="/search" onsubmit="return validateForm(this.elements['q'].value)">
+                <input type="text" class="span12" placeholder="Search" name="q" id="tipue_search_input_404">
+                <button class="btn" type="submit">Search</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script type="text/javascript">
+    // Get Current location as the initial search item
+    var newurl = (' ' + window.location.pathname).slice(1);
+
+    // Replace "/" in path into spaces
+    var newurl = newurl.replace(/\//g, ' ');
+
+    // Remove html extension
+    var newurl = newurl.replace(/.html/g, ' ');
+
+    // Replace - by ' '
+    var newurl = newurl.replace(/\-/g, ' ');
+
+    // Fill search field with resulting string
+    document.getElementById('tipue_search_input_404').value = newurl;
+</script>
+
                     </div>
                     <div class="span1"></div>
                 </div>
