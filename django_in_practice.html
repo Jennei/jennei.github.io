@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="author" content="nico" />
+
+        <meta name="description" content="Django开发企业级应用
+" />
+        <meta property="og:type" content="article" />
+        <meta name="twitter:card" content="summary">
+
+<meta name="keywords" content="django djangorestframework, Django开发企业级应用, " />
+
+<meta property="og:title" content="赞乎产品需求规格说明书 "/>
+<meta property="og:url" content="/django_in_practice" />
+<meta property="og:description" content="Django开发企业级应用" />
+<meta property="og:site_name" content="Nico&#39;sBlog" />
+<meta property="og:article:author" content="nico" />
+<meta property="og:article:published_time" content="2020-03-15T13:46:00+08:00" />
+<meta name="twitter:title" content="赞乎产品需求规格说明书 ">
+<meta name="twitter:description" content="Django开发企业级应用">
+
+        <title>赞乎产品需求规格说明书  · Nico&#39;sBlog
+</title>
+        <link href="//netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/css/bootstrap-combined.min.css" rel="stylesheet">
+<link rel="stylesheet" href="/theme/css/style.min.css?e83b4deb">
+
+
+
+    </head>
+    <body>
+        <div id="content">
+            <div class="navbar navbar-static-top">
+                <div class="navbar-inner">
+                    <div class="container-fluid">
+                        <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+                            <span class="icon-bar"></span>
+                            <span class="icon-bar"></span>
+                            <span class="icon-bar"></span>
+                        </a>
+                        <a class="brand" href="/"><span class=site-name>Nico'sBlog</span></a>
+                        <div class="nav-collapse collapse">
+                            <ul class="nav pull-right top-menu">
+                                <li >
+                                    <a href=
+                                       "/"
+                                    >Home</a>
+                                </li>
+                                <li ><a href="/categories">Categories</a></li>
+                                <li ><a href="/tags">Tags</a></li>
+                                <li ><a href="/archives">Archives</a></li>
+                                <li><form class="navbar-search" action="/search" onsubmit="return validateForm(this.elements['q'].value);"> <input type="text" class="search-query" placeholder="Search" name="q" id="tipue_search_input"></form></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="container-fluid">
+                <div class="row-fluid">
+                    <div class="span1"></div>
+                    <div class="span10">
+<article itemscope>
+<div class="row-fluid">
+    <header class="page-header span10 offset2">
+        <h1>
+            <a href="/django_in_practice">
+                赞乎产品需求规格说明书
+            </a>
+        </h1>
+    </header>
+</div>
+
+<div class="row-fluid">
+    <div class="span2 table-of-content">
+        <nav>
+        <h4>Contents</h4>
+        <div class="toc" id="">
+
+<ul class="simple">
+<li><a class="reference internal" href="#id3" id="id39">赞乎产品需求规格说明书</a></li>
+<li><a class="reference internal" href="#id4" id="id40">第一章 修订页</a></li>
+<li><a class="reference internal" href="#id5" id="id41">第二章 项目概述</a><ul>
+<li><a class="reference internal" href="#id6" id="id42">2.1 产品描述</a></li>
+<li><a class="reference internal" href="#id7" id="id43">2.2 产品功能</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#id8" id="id44">第三章 业务需求</a><ul>
+<li><a class="reference internal" href="#id9" id="id45">3.1 总体需求</a></li>
+<li><a class="reference internal" href="#id10" id="id46">3.2 用户个人中心</a><ul>
+<li><a class="reference internal" href="#id11" id="id47">3.2.1 登录/注册/退出</a></li>
+<li><a class="reference internal" href="#id12" id="id48">3.2.2 个人信息</a></li>
+<li><a class="reference internal" href="#id13" id="id49">3.3.3 用户信息统计</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#id14" id="id50">3.3 首页动态功能</a><ul>
+<li><a class="reference internal" href="#id15" id="id51">3.3.1 动态列表页</a></li>
+<li><a class="reference internal" href="#id16" id="id52">3.3.2 发表动态</a></li>
+<li><a class="reference internal" href="#id17" id="id53">3.3.3 删除动态</a></li>
+<li><a class="reference internal" href="#id18" id="id54">3.3.4 用户点赞</a></li>
+<li><a class="reference internal" href="#id19" id="id55">3.3.5 用户评论</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#id20" id="id56">3.4 文章模块</a><ul>
+<li><a class="reference internal" href="#id21" id="id57">3.4.1 浏览文章页</a></li>
+<li><a class="reference internal" href="#id22" id="id58">3.4.2 文章详情页面</a></li>
+<li><a class="reference internal" href="#id23" id="id59">3.4.3 写文章</a></li>
+<li><a class="reference internal" href="#id24" id="id60">3.4.4 保存草稿</a></li>
+<li><a class="reference internal" href="#id25" id="id61">3.4.5 评论文章</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#id26" id="id62">3.5 问答模块</a><ul>
+<li><a class="reference internal" href="#id27" id="id63">3.5.1 问答页</a></li>
+<li><a class="reference internal" href="#id28" id="id64">3.5.2 问题详情页</a></li>
+<li><a class="reference internal" href="#id29" id="id65">3.5.3 用户提问</a></li>
+<li><a class="reference internal" href="#id30" id="id66">3.5.4 回答问题</a></li>
+<li><a class="reference internal" href="#id31" id="id67">3.5.5 给问题或回答投票</a></li>
+<li><a class="reference internal" href="#id32" id="id68">3.5.6 提问者接受回答</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#id33" id="id69">3.6 私信功能</a></li>
+<li><a class="reference internal" href="#id34" id="id70">3.7 消息通知</a><ul>
+<li><a class="reference internal" href="#id35" id="id71">3.7.1 通知下拉框</a></li>
+<li><a class="reference internal" href="#id36" id="id72">3.7.2 未读通知列表</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#id37" id="id73">3.8 全站搜索</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#id38" id="id74">第四章 附录</a></li>
+</ul>
+</div>
+        </nav>
+    </div>
+    <div class="span8 article-content">
+            
+            
+<div class="admonition attention">
+<p class="first admonition-title">注意</p>
+<p>版权说明</p>
+<p class="last">本文档属于XX软件有限公司所有的机密材料。
+在获得XX软件有限公司直接的书面允许之前，
+本文档中的任何部分均不得用各种方法或形式复制或公布于众。
+这些方法包括电子或机械的方法，
+如影印或各种信息存储或重复取用系统。
+同样，在获得XX软件有限公司直接的书面允许之前，
+本文章中的任何部分也不得向第三方披露</p>
+</div>
+<div class="section" id="id3">
+<h2><a class="toc-backref" href="#id39">赞乎产品需求规格说明书</a></h2>
+<table border="1" class="docutils">
+<colgroup>
+<col width="44%"/>
+<col width="56%"/>
+</colgroup>
+<thead valign="bottom">
+<tr><th class="head">文档编号</th>
+<th class="head">V 0.1.0</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr><td>编写人</td>
+<td>Nico</td>
+</tr>
+<tr><td>模块名称</td>
+<td>赞乎需求说明</td>
+</tr>
+<tr><td>部门</td>
+<td>研发部</td>
+</tr>
+<tr><td>保密等级</td>
+<td>极密</td>
+</tr>
+<tr><td>日期</td>
+<td>2020年03月15日</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="id4">
+<h2><a class="toc-backref" href="#id40">第一章 修订页</a></h2>
+<table border="1" class="docutils">
+<colgroup>
+<col width="9%"/>
+<col width="13%"/>
+<col width="12%"/>
+<col width="14%"/>
+<col width="14%"/>
+<col width="15%"/>
+<col width="12%"/>
+<col width="14%"/>
+</colgroup>
+<thead valign="bottom">
+<tr><th class="head">编号</th>
+<th class="head">章节名称</th>
+<th class="head">修订内容简述</th>
+<th class="head">修订日期</th>
+<th class="head">修订前版本号</th>
+<th class="head">修订后版本号</th>
+<th class="head">修订人</th>
+<th class="head">批准人</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr><td>001</td>
+<td> </td>
+<td> </td>
+<td> </td>
+<td> </td>
+<td> </td>
+<td> </td>
+<td> </td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="id5">
+<h2><a class="toc-backref" href="#id41">第二章 项目概述</a></h2>
+<div class="section" id="id6">
+<h3><a class="toc-backref" href="#id42">2.1 产品描述</a></h3>
+<p>赞乎是一个类似于知乎的知识问答社区，连接各行各业的用户。用户分享着彼此的知识、经验和见解，为中文互联网源源不断地提供多种多样的信息。</p>
+</div>
+<div class="section" id="id7">
+<h3><a class="toc-backref" href="#id43">2.2 产品功能</a></h3>
+<p>本产品为PC端，具有当今主流知识问答应用的功能，包括个人中心、动态、文章、问答、私信、消息通知、网站搜索，对外开放邮箱注册。</p>
+</div>
+</div>
+<div class="section" id="id8">
+<h2><a class="toc-backref" href="#id44">第三章 业务需求</a></h2>
+<div class="section" id="id9">
+<h3><a class="toc-backref" href="#id45">3.1 总体需求</a></h3>
+<ul class="simple">
+<li>本产品不包含后台管理系统</li>
+<li>网站所有内容需要用户登陆后才能访问</li>
+</ul>
+</div>
+<div class="section" id="id10">
+<h3><a class="toc-backref" href="#id46">3.2 用户个人中心</a></h3>
+<div class="section" id="id11">
+<h4><a class="toc-backref" href="#id47">3.2.1 登录/注册/退出</a></h4>
+<p>可以邮箱注册，使用第三方应用微信或Github注册登录，用户名登录，支持邮箱找回和重置密码。</p>
+</div>
+<div class="section" id="id12">
+<h4><a class="toc-backref" href="#id48">3.2.2 个人信息</a></h4>
+<p>包括昵称、邮箱、头像、简介、职称、城市、个人链接、微博链接、知乎链接、Github链接、LinkedIn链接，用户可以更新。</p>
+</div>
+<div class="section" id="id13">
+<h4><a class="toc-backref" href="#id49">3.3.3 用户信息统计</a></h4>
+<p>显示用户自网站注册日起，发表动态的数量，已发表文章的数量，参与评论的数量，提问的数量，回答问题的数量，用户的互动总数。</p>
+</div>
+</div>
+<div class="section" id="id14">
+<h3><a class="toc-backref" href="#id50">3.3 首页动态功能</a></h3>
+<div class="section" id="id15">
+<h4><a class="toc-backref" href="#id51">3.3.1 动态列表页</a></h4>
+<ul class="simple">
+<li>最上方有“发表动态”按钮，每页显示20条动态</li>
+<li>动态下有点赞和评论按钮</li>
+<li>每条动态除内容外要显示用户头像、昵称、发表时间、赞和评论数量，用户互动后能自动更新数量</li>
+<li>对于登录用户发表的动态，右上角显示删除按钮</li>
+</ul>
+</div>
+<div class="section" id="id16">
+<h4><a class="toc-backref" href="#id52">3.3.2 发表动态</a></h4>
+<p>发表动态字数不限，畅所欲言。</p>
+</div>
+<div class="section" id="id17">
+<h4><a class="toc-backref" href="#id53">3.3.3 删除动态</a></h4>
+<p>用户可以删除自己发表的动态。</p>
+</div>
+<div class="section" id="id18">
+<h4><a class="toc-backref" href="#id54">3.3.4 用户点赞</a></h4>
+<p>可以给自己和其他人点赞，也可以取消赞。</p>
+</div>
+<div class="section" id="id19">
+<h4><a class="toc-backref" href="#id55">3.3.5 用户评论</a></h4>
+<p>评论不能删除，除非状态被发表人删除</p>
+</div>
+</div>
+<div class="section" id="id20">
+<h3><a class="toc-backref" href="#id56">3.4 文章模块</a></h3>
+<p>如下4个功能点中，第1、2、3各使用一页，页面上方有面包屑可以跳转；</p>
+<div class="section" id="id21">
+<h4><a class="toc-backref" href="#id57">3.4.1 浏览文章页</a></h4>
+<ul class="simple">
+<li>每页显示10篇文章</li>
+<li>每篇文章显示标题、图片、内容的前100个字、发表人、发表时间、文章标签已经阅读全文的按钮</li>
+<li>文章页要显示“写文章”和“草稿箱”按钮，云标签</li>
+</ul>
+</div>
+<div class="section" id="id22">
+<h4><a class="toc-backref" href="#id58">3.4.2 文章详情页面</a></h4>
+<ul class="simple">
+<li>每篇文章显示标题、图片、内容、发表人、发表时间</li>
+<li>文章页要显示“写文章”和“编辑”按钮，云标签</li>
+<li>文章下方有评论区</li>
+</ul>
+</div>
+<div class="section" id="id23">
+<h4><a class="toc-backref" href="#id59">3.4.3 写文章</a></h4>
+<ul class="simple">
+<li>用户必填字段为标题、内容、文章图片、标签，标签支持多个使用英文逗号隔开</li>
+<li>编辑文章内容时可Markdown实时预览</li>
+<li>用户可将文章发表或保存为草稿，或者取消</li>
+</ul>
+</div>
+<div class="section" id="id24">
+<h4><a class="toc-backref" href="#id60">3.4.4 保存草稿</a></h4>
+<p>草稿箱与浏览文章页功能一样，不用之处在于用户只能看到自己保存的草稿。</p>
+</div>
+<div class="section" id="id25">
+<h4><a class="toc-backref" href="#id61">3.4.5 评论文章</a></h4>
+<p>用户评论时必填昵称、邮箱地址、内容，选填URL</p>
+</div>
+</div>
+<div class="section" id="id26">
+<h3><a class="toc-backref" href="#id62">3.5 问答模块</a></h3>
+<div class="section" id="id27">
+<h4><a class="toc-backref" href="#id63">3.5.1 问答页</a></h4>
+<p>页面上方有面包屑，下面是话题分类和提问按钮，下面是3个Tab栏目：待回答问题页、已回答问题页、所有问题页，每页显示20个问题；</p>
+<p>​每个问题需要显示：回答的数量、问题的投票数量、标题、内容的前100个字符、提问者、提问时间、问题标签</p>
+</div>
+<div class="section" id="id28">
+<h4><a class="toc-backref" href="#id64">3.5.2 问题详情页</a></h4>
+<p>页面上方有面包屑，显示问题的所有回答</p>
+<p>问题需要显示：回答的数量、问题的投票数量、标题、内容的前100个字符、提问者、提问时间、问题标签；用户可以给问题投票，有提问按钮和回答按钮</p>
+<p>回答需要显示：回答的投票数、回答用户的头像和昵称、答案内容、回答时间、如果回答被接受显示对勾；用户可以给回答投票</p>
+</div>
+<div class="section" id="id29">
+<h4><a class="toc-backref" href="#id65">3.5.3 用户提问</a></h4>
+<ul class="simple">
+<li>用户必填字段为标题、内容、标签，标签支持多个使用英文逗号隔开</li>
+<li>编辑文章内容时可Markdown实时预览</li>
+<li>用户可将问题发表或保存为草稿，或者取消</li>
+<li>问题不能修改或删除</li>
+</ul>
+</div>
+<div class="section" id="id30">
+<h4><a class="toc-backref" href="#id66">3.5.4 回答问题</a></h4>
+<p>页面上方有面包屑，填写回答内容时可Markdown实时预览；回答不能修改或删除</p>
+</div>
+<div class="section" id="id31">
+<h4><a class="toc-backref" href="#id67">3.5.5 给问题或回答投票</a></h4>
+<p>显示票数=赞同数 - 反对数，用户可以赞同或反对，随时取消赞同或反对</p>
+</div>
+<div class="section" id="id32">
+<h4><a class="toc-backref" href="#id68">3.5.6 提问者接受回答</a></h4>
+<p>只能接受一个回答，接受后不能取消</p>
+</div>
+</div>
+<div class="section" id="id33">
+<h3><a class="toc-backref" href="#id69">3.6 私信功能</a></h3>
+<ul class="simple">
+<li>每页显示可私信的20个用户</li>
+<li>对话框默认选中最近一次私信互动的用户</li>
+<li>可与其他用户在线聊天</li>
+<li>聊天内容显示头像、昵称、时间、内容，点击昵称可跳转至用户个人中心</li>
+</ul>
+</div>
+<div class="section" id="id34">
+<h3><a class="toc-backref" href="#id70">3.7 消息通知</a></h3>
+<p>当其它用户与我有如下互动时能接收到通知：</p>
+<ol class="arabic simple">
+<li>赞了我的状态</li>
+<li>评论了我的动态或文章</li>
+<li>收藏了我的文章</li>
+<li>回答了我的提问</li>
+<li>接受了我的回答</li>
+<li>回复了我的评论</li>
+</ol>
+<div class="section" id="id35">
+<h4><a class="toc-backref" href="#id71">3.7.1 通知下拉框</a></h4>
+<p>显示最近收到的5条消息通知，包括昵称、互动类型、互动对象、互动时间；有”查看所有通知“和”全部标为已读“按钮</p>
+</div>
+<div class="section" id="id36">
+<h4><a class="toc-backref" href="#id72">3.7.2 未读通知列表</a></h4>
+<p>显示所有的消息通知，有全部标为已读按钮；</p>
+<p>每条消息通知包括用户头像、昵称、互动类型、互动对象、互动时间，有”标为已读“按钮；</p>
+</div>
+</div>
+<div class="section" id="id37">
+<h3><a class="toc-backref" href="#id73">3.8 全站搜索</a></h3>
+<p>可以搜索文章、动态、问题、用户、标签；</p>
+<p>文章搜索结果：显示文章图片、标题（可跳转）、内容的前100个字</p>
+<p>动态搜索结果：与首页的显示的动态信息一致</p>
+<p>问题搜索结果：与问答页显示的问题信息一致</p>
+<p>用户搜索结果：显示用户头像（可跳转）、昵称（可发邮件）、职位、城市</p>
+<p>标签搜索结果：显示被搜索到的标签</p>
+</div>
+</div>
+<div class="section" id="id38">
+<h2><a class="toc-backref" href="#id74">第四章 附录</a></h2>
+</div>
+
+
+
+            
+            
+
+
+
+
+
+
+            <hr/>
+            <aside>
+            <nav>
+            <ul class="articles-timeline">
+                <li class="previous-article">« <a href="/nodejs_practice" title="Previous: NodeJs开发环境搭建实践">NodeJs开发环境搭建实践</a></li>
+            </ul>
+            </nav>
+            </aside>
+        </div>
+        <section>
+        <div class="span2" style="float:right;font-size:0.9em;">
+            <h4>Published</h4>
+            <time itemprop="dateCreated" datetime="2020-03-15T13:46:00+08:00"> 3 15, 2020</time>
+            <h4>Category</h4>
+            <a class="category-link" href="/categories#djangokai-fa-qi-ye-ji-ying-yong-ref">Django开发企业级应用</a>
+            <h4>Tags</h4>
+            <ul class="list-of-tags tags-in-article">
+                <li><a href="/tags#django-djangorestframework-ref">django djangorestframework
+                    <span>1</span>
+</a></li>
+            </ul>
+            
+
+
+
+
+
+            
+
+
+
+
+
+        </div>
+        </section>
+</div>
+</article>
+                    </div>
+                    <div class="span1"></div>
+                </div>
+            </div>
+        </div>
+<footer>
+    <div>
+        Content licensed under <a rel="license"
+    href="http://creativecommons.org/licenses/by/4.0/" target="_blank">
+    Creative Commons Attribution 4.0 International License</a>.
+    </div>
+
+    <div>
+        <span class="site-name">Nico'sBlog</span> - Life is short, you need python.
+    </div>
+
+
+
+    <div id="fpowered">
+        Copyright (c) 2019-2019 Nico All Rights Revered
+    </div>
+</footer>            <script src="//code.jquery.com/jquery.min.js"></script>
+        <script src="//netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/js/bootstrap.min.js"></script>
+        <script>
+            function validateForm(query)
+            {
+                return (query.length > 0);
+            }
+        </script>
+
+    <script>
+    (function () {
+        if (window.location.hash.match(/^#comment-\d+$/)) {
+            $('#comment_thread').collapse('show');
+        }
+    })();
+    window.onhashchange=function(){
+        if (window.location.hash.match(/^#comment-\d+$/))
+            window.location.reload(true);
+    }
+    $('#comment_thread').on('shown', function () {
+        var link = document.getElementById('comment-accordion-toggle');
+        var old_innerHTML = link.innerHTML;
+        $(link).fadeOut(200, function() {
+            $(this).text('Click here to hide comments').fadeIn(200);
+        });
+        $('#comment_thread').on('hidden', function () {
+            $(link).fadeOut(200, function() {
+                $(this).text(old_innerHTML).fadeIn(200);
+            });
+        })
+    })
+</script>
+
+    </body>
+    <!-- Theme: Elegant built for Pelican
+        License : MIT -->
+</html>
