@@ -1,0 +1,858 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="author" content="nico" />
+
+        <meta name="description" content="MetaClassProgramming
+" />
+        <meta property="og:type" content="article" />
+        <meta name="twitter:card" content="summary">
+
+<meta name="keywords" content="python, Python, " />
+
+<meta property="og:title" content="Python元类编程(一) "/>
+<meta property="og:url" content="/MetaClassProgramming" />
+<meta property="og:description" content="MetaClassProgramming" />
+<meta property="og:site_name" content="Nico&#39;sBlog (｡･∀･)ﾉﾞ" />
+<meta property="og:article:author" content="nico" />
+<meta property="og:article:published_time" content="2021-04-10T13:47:00+08:00" />
+<meta property="og:article:modified_time" content="2021-04-10T13:47:00+08:00" />
+<meta name="twitter:title" content="Python元类编程(一) ">
+<meta name="twitter:description" content="MetaClassProgramming">
+
+        <title>Python元类编程(一)  · Nico&#39;sBlog (｡･∀･)ﾉﾞ
+</title>
+        <!--link href="//netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/css/bootstrap-combined.min.css" rel="stylesheet"-->
+        <link href="/theme/bootstrap/css/bootstrap.min.css" rel="stylesheet" type="text/css">
+<link rel="stylesheet" href="/theme/css/style.min.css?e83b4deb">
+
+
+
+    </head>
+    <body>
+        <div id="content">
+            <div class="navbar navbar-static-top">
+                <div class="navbar-inner">
+                    <div class="container-fluid">
+                        <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+                            <span class="icon-bar"></span>
+                            <span class="icon-bar"></span>
+                            <span class="icon-bar"></span>
+                        </a>
+                        <a class="brand" href="/"><span class=site-name>Nico'sBlog (｡･∀･)ﾉﾞ</span></a>
+                        <div class="nav-collapse collapse">
+                            <ul class="nav pull-right top-menu">
+                                <li >
+                                    <a href=
+                                       "/"
+                                    >Home</a>
+                                </li>
+                                <li ><a href="/categories">Categories</a></li>
+                                <li ><a href="/tags">Tags</a></li>
+                                <li ><a href="/archives">Archives</a></li>
+                                <li><form class="navbar-search" action="/search" onsubmit="return validateForm(this.elements['q'].value);"> <input type="text" class="search-query" placeholder="Search" name="q" id="tipue_search_input"></form></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="container-fluid">
+                <div class="row-fluid">
+                    <div class="span1"></div>
+                    <div class="span10">
+<article itemscope>
+<div class="row-fluid">
+    <header class="page-header span10 offset2">
+        <h1>
+            <a href="/MetaClassProgramming">
+                Python元类编程(一)
+            </a>
+        </h1>
+    </header>
+</div>
+
+<div class="row-fluid">
+    <div class="span2 table-of-content">
+        <nav>
+        <h4>Contents</h4>
+        <div class="toc" id="">
+<p class="topic-title">目录</p>
+<ul class="simple">
+<li><a class="reference internal" href="#id2" id="id9">元类编程基础</a></li>
+<li><a class="reference internal" href="#id3" id="id10">元类钩子</a><ul>
+<li><a class="reference internal" href="#python3-x" id="id11">在python3.x中的元类钩子</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#id4" id="id12">例子：子类自我注册</a></li>
+<li><a class="reference internal" href="#final" id="id13">例子：让类变成 "Final"</a></li>
+<li><a class="reference internal" href="#init-new" id="id14">使用元类的 <tt class="docutils literal">__init__</tt> 还是 <tt class="docutils literal">__new__</tt> 方法</a></li>
+<li><a class="reference internal" href="#id5" id="id15">类方法和元类方法</a></li>
+<li><a class="reference internal" href="#id6" id="id16">拦截类的创建</a><ul>
+<li><a class="reference internal" href="#id7" id="id17">类装饰器实现的单例</a></li>
+<li><a class="reference internal" href="#prepare" id="id18"><tt class="docutils literal">__prepare__()</tt> 元类方法</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#metaclass" id="id19">metaclass 冲突</a></li>
+<li><a class="reference internal" href="#id8" id="id20">进一步阅读</a></li>
+</ul>
+</div>
+        </nav>
+    </div>
+    <div class="span8 article-content">
+            
+            
+<div class="admonition note">
+<p class="first admonition-title">注解</p>
+<p>这篇文章翻译自</p>
+<p class="last"><a class="reference external" href="https://python-3-patterns-idioms-test.readthedocs.io/en/latest/Metaprogramming.html">https://python-3-patterns-idioms-test.readthedocs.io/en/latest/Metaprogramming.html</a>
+非逐字翻译，结合了我的个人理解。</p>
+</div>
+<p>python 中所有对象都是由其它一种特殊对象"class"创建，也就是叫做类的这个对象，我们可以像修改普通对象一样去修改这个"类"对象。</p>
+<div class="highlight"><pre><span></span><span class="o">&gt;&gt;&gt;</span> <span class="k">class</span> <span class="nc">Foo</span><span class="p">:</span> <span class="k">pass</span>
+<span class="o">...</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">Foo</span><span class="o">.</span><span class="n">field</span> <span class="o">=</span> <span class="mi">42</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">x</span> <span class="o">=</span> <span class="n">Foo</span><span class="p">()</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">x</span><span class="o">.</span><span class="n">field</span>
+<span class="mi">42</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">Foo</span><span class="o">.</span><span class="n">field2</span> <span class="o">=</span> <span class="mi">99</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">x</span><span class="o">.</span><span class="n">field2</span>
+<span class="mi">99</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">Foo</span><span class="o">.</span><span class="n">method</span> <span class="o">=</span> <span class="k">lambda</span> <span class="bp">self</span><span class="p">:</span> <span class="s2">"Hi!"</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">x</span><span class="o">.</span><span class="n">method</span><span class="p">()</span>
+<span class="s1">'Hi!'</span>
+</pre></div>
+<p>修改"类"对象（上例 <tt class="docutils literal">Foo</tt>）就像平常操作修改其它对象一样，例如，你可以往对象上添加方法，属性，或者删除对象上的方法，属性。不同于修改普通
+对象在于任何对于"类"这个对象的修改，会影响到这个类对象之后实例化的所有对象，包括已经被实例化的对象。</p>
+<p>那么是什么创建了这个特殊的"类"对象，这里引出另一个特殊的对象我们称作 <tt class="docutils literal">metaclass</tt></p>
+<p>python里默认的元类被称为 <tt class="docutils literal">type</tt> 大多数情况下，开发者并不需要关心它，但在特殊情况通过修改"类"对象的生成方式，可以得到更好的问题解决办法，
+特别是执行额外的操作或者注入代码，在这种情况通过使用元类编程达到修改"类"对象的生成方式。</p>
+<p>这里值得再次强调一遍，在大多数情况下不需要使用元类，不必刻意去使用元类。下面的例子中会给出一个问题使用元类以及不使用元类的两种解决办法，你将
+会看到解决问题的更简单形式。</p>
+<p>在先前python的实现中，一些只能由元类实现的功能，现在也可以通过使用类装饰器以更简单的方式来完成，但是理解元类本身依然非常有用，一些问题现在
+依然只能由元类编程来实现。</p>
+<div class="section" id="id2">
+<h2><a class="toc-backref" href="#id9">元类编程基础</a></h2>
+<p>所以在python中元类 <tt class="docutils literal">metaclass</tt> 实际创建了"类" <tt class="docutils literal">class</tt> 类然后创建了类的实例，通常我们构造类时，默认的元类 <tt class="docutils literal">type</tt> 会被自动调用并
+创建出我们指定的"类"对象，这个过程开发者是无感知的。</p>
+<p>这里可以用显式的代码来展现元类创建"类"对象的过程。<tt class="docutils literal">type</tt> 接收一个参数调用时，会返回现有类的类型信息，例如 <tt class="docutils literal"><span class="pre">type('He')</span> <span class="pre">-&gt;</span> str</tt> 但当
+<tt class="docutils literal">type</tt> 以三个参数被调用将创建一个"类"对象，调用 <tt class="docutils literal">type</tt> 的三个参数分别是类型名称，被创建类的基类型列表，以及指定被创建类的命名空间（一
+个包含所有变量以及方法的字典），例如下面两段代码都是等价的。</p>
+<div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">C</span><span class="p">:</span> <span class="k">pass</span>
+</pre></div>
+<p>等价于</p>
+<div class="highlight"><pre><span></span><span class="n">C</span> <span class="o">=</span> <span class="nb">type</span><span class="p">(</span><span class="s1">'C'</span><span class="p">,</span> <span class="p">(),</span> <span class="p">{})</span>
+</pre></div>
+<p>"类"对象通常也被引作为类型，所以上面的示例中调用 <tt class="docutils literal">type</tt> 非常合理，即通过参数调用type创建了一个新的类型 "C" 。</p>
+<p>我们可以给这个"类"对象加上基类，以及方法和属性，例如</p>
+<div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">howdy</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">you</span><span class="p">):</span>
+ <span class="nb">print</span><span class="p">(</span><span class="s2">"Howdy, "</span> <span class="o">+</span> <span class="n">you</span><span class="p">)</span>
+
+<span class="n">MyList</span> <span class="o">=</span> <span class="nb">type</span><span class="p">(</span><span class="s1">'MyList'</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,),</span> <span class="nb">dict</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="mi">42</span><span class="p">,</span> <span class="n">howdy</span><span class="o">=</span><span class="n">howdy</span><span class="p">))</span>
+
+<span class="n">ml</span> <span class="o">=</span> <span class="n">MyList</span><span class="p">()</span>
+<span class="n">ml</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">"Camembert"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">ml</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">ml</span><span class="o">.</span><span class="n">x</span><span class="p">)</span>
+<span class="n">ml</span><span class="o">.</span><span class="n">howdy</span><span class="p">(</span><span class="s2">"John"</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">ml</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__class__</span><span class="p">)</span>
+
+<span class="sd">""" Output:</span>
+<span class="sd">['Camembert']</span>
+<span class="sd">42</span>
+<span class="sd">Howdy, John</span>
+<span class="sd">&lt;class 'type'&gt;</span>
+<span class="sd">"""</span>
+</pre></div>
+<p>注意上面打印类型的类型会返回该类型的元类。</p>
+<p>这种使用 <tt class="docutils literal">type</tt> 以编程的形式生成"类"的能力可以带来一些有趣的可能性。看下面的例子，所有的子类都使用重复的代码写出，但现在我们可以借助 <tt class="docutils literal">type</tt>
+的能力来自动生成子类。</p>
+<div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">operator</span>
+
+<span class="k">class</span> <span class="nc">Event</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="n">events</span> <span class="o">=</span> <span class="p">[]</span> <span class="c1"># static</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">action</span><span class="p">,</span> <span class="n">time</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">action</span> <span class="o">=</span> <span class="n">action</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">time</span> <span class="o">=</span> <span class="n">time</span>
+        <span class="n">Event</span><span class="o">.</span><span class="n">events</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__lt__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="s2">"So sort() will compare only on time."</span>
+        <span class="k">return</span> <span class="n">operator</span><span class="o">.</span><span class="n">lt</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">time</span><span class="p">,</span> <span class="n">other</span><span class="o">.</span><span class="n">time</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">operator</span><span class="o">.</span><span class="n">eq</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">time</span><span class="p">,</span> <span class="n">other</span><span class="o">.</span><span class="n">time</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">"</span><span class="si">%.2f</span><span class="s2">: </span><span class="si">%s</span><span class="s2">"</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">time</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">action</span><span class="p">))</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">run_events</span><span class="p">():</span>
+        <span class="n">Event</span><span class="o">.</span><span class="n">events</span><span class="o">.</span><span class="n">sort</span><span class="p">();</span>
+        <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">Event</span><span class="o">.</span><span class="n">events</span><span class="p">:</span>
+            <span class="n">e</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+
+<span class="k">def</span> <span class="nf">create_mc</span><span class="p">(</span><span class="n">description</span><span class="p">):</span>
+    <span class="s2">"Create subclass using the 'type' metaclass"</span>
+    <span class="n">class_name</span> <span class="o">=</span> <span class="s2">""</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">capitalize</span><span class="p">()</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">description</span><span class="o">.</span><span class="n">split</span><span class="p">())</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">time</span><span class="p">):</span>
+        <span class="n">Event</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">description</span> <span class="o">+</span> <span class="s2">" [mc]"</span><span class="p">,</span> <span class="n">time</span><span class="p">)</span>
+    <span class="nb">globals</span><span class="p">()[</span><span class="n">class_name</span><span class="p">]</span> <span class="o">=</span> <span class="nb">type</span><span class="p">(</span><span class="n">class_name</span><span class="p">,</span> <span class="p">(</span><span class="n">Event</span><span class="p">,),</span> <span class="nb">dict</span><span class="p">(</span><span class="fm">__init__</span> <span class="o">=</span> <span class="fm">__init__</span><span class="p">))</span>
+
+<span class="k">def</span> <span class="nf">create_exec</span><span class="p">(</span><span class="n">description</span><span class="p">):</span>
+    <span class="s2">"Create subclass by exec-ing a string"</span>
+    <span class="n">class_name</span> <span class="o">=</span> <span class="s2">""</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">capitalize</span><span class="p">()</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">description</span><span class="o">.</span><span class="n">split</span><span class="p">())</span>
+    <span class="n">klass</span> <span class="o">=</span> <span class="s2">"""</span>
+<span class="s2">class </span><span class="si">%s</span><span class="s2">(Event):</span>
+<span class="s2">    def __init__(self, time):</span>
+<span class="s2">        Event.__init__(self, "</span><span class="si">%s</span><span class="s2"> [exec]", time)</span>
+<span class="s2">"""</span> <span class="o">%</span> <span class="p">(</span><span class="n">class_name</span><span class="p">,</span> <span class="n">description</span><span class="p">)</span>
+    <span class="n">exec</span><span class="p">(</span><span class="n">klass</span><span class="p">,</span> <span class="nb">globals</span><span class="p">())</span>
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">"__main__"</span><span class="p">:</span>
+    <span class="n">descriptions</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"Light on"</span><span class="p">,</span> <span class="s2">"Light off"</span><span class="p">,</span> <span class="s2">"Water on"</span><span class="p">,</span> <span class="s2">"Water off"</span><span class="p">,</span>
+                     <span class="s2">"Thermostat night"</span><span class="p">,</span> <span class="s2">"Thermostat day"</span><span class="p">,</span> <span class="s2">"Ring bell"</span><span class="p">]</span>
+    <span class="n">initializations</span> <span class="o">=</span> <span class="s2">"ThermostatNight(5.00); LightOff(2.00); </span><span class="se">\</span>
+<span class="s2">        WaterOn(3.30); WaterOff(4.45); LightOn(1.00); </span><span class="se">\</span>
+<span class="s2">        RingBell(7.00); ThermostatDay(6.00)"</span>
+    <span class="p">[</span><span class="n">create_mc</span><span class="p">(</span><span class="n">dsc</span><span class="p">)</span> <span class="k">for</span> <span class="n">dsc</span> <span class="ow">in</span> <span class="n">descriptions</span><span class="p">]</span>
+    <span class="n">exec</span> <span class="n">initializations</span> <span class="ow">in</span> <span class="nb">globals</span><span class="p">()</span>
+    <span class="p">[</span><span class="n">create_exec</span><span class="p">(</span><span class="n">dsc</span><span class="p">)</span> <span class="k">for</span> <span class="n">dsc</span> <span class="ow">in</span> <span class="n">descriptions</span><span class="p">]</span>
+    <span class="n">exec</span> <span class="n">initializations</span> <span class="ow">in</span> <span class="nb">globals</span><span class="p">()</span>
+    <span class="n">Event</span><span class="o">.</span><span class="n">run_events</span><span class="p">()</span>
+
+<span class="sd">""" Output:</span>
+<span class="sd">1.00: Light on [mc]</span>
+<span class="sd">1.00: Light on [exec]</span>
+<span class="sd">2.00: Light off [mc]</span>
+<span class="sd">2.00: Light off [exec]</span>
+<span class="sd">3.30: Water on [mc]</span>
+<span class="sd">3.30: Water on [exec]</span>
+<span class="sd">4.45: Water off [mc]</span>
+<span class="sd">4.45: Water off [exec]</span>
+<span class="sd">5.00: Thermostat night [mc]</span>
+<span class="sd">5.00: Thermostat night [exec]</span>
+<span class="sd">6.00: Thermostat day [mc]</span>
+<span class="sd">6.00: Thermostat day [exec]</span>
+<span class="sd">7.00: Ring bell [mc]</span>
+<span class="sd">7.00: Ring bell [exec]</span>
+<span class="sd">"""</span>
+</pre></div>
+<p>所有事件的基类 <tt class="docutils literal">Event</tt> 是相同的, 这里使用 <tt class="docutils literal">create_mc</tt> 函数来自动在全局命名空间中创建出了各种事件类型,该函数接收description参数并
+以此创建出类型名字然后将类型注册在全局命名空间中，函数内部定义的 <tt class="docutils literal">__init__</tt> 方法，通过调用 <tt class="docutils literal">type</tt> 注册在类型的命名空间上，从而生了
+<tt class="docutils literal">Event</tt> 的新的子类。注意，这里生成的类对象必须放入全局命名空间，才可以在外部正常访问到。</p>
+<p>这种方法工作良好，但是考虑下 <tt class="docutils literal">create_exec</tt> 函数，它通过声明的类型字符串调用 <tt class="docutils literal">exec</tt> 实现了相同的事情，这对于大多数不理解元类的人阅读
+代码来说更容易一点。</p>
+</div>
+<div class="section" id="id3">
+<h2><a class="toc-backref" href="#id10">元类钩子</a></h2>
+<p>到目前为止，我们只直接使用了元类 <tt class="docutils literal">type</tt>。 元类操作涉及将我们自己的代码注入到"类"对象的创建过程中，通过以下步骤实现：</p>
+<ol class="arabic simple">
+<li>继承元类 <tt class="docutils literal">type</tt> 在子类钩子方法中插入我们自己的代码</li>
+<li>将我们自己的元类插入"类"对象的创建过程中通过 <tt class="docutils literal">metaclass</tt> 钩子</li>
+</ol>
+<p>在 python2.x 中 <tt class="docutils literal">metaclass</tt> 钩子是类上的一个静态字段 <tt class="docutils literal">__metaclass__</tt> 通常情况下这个变量是不赋值的，所以python只使用 <tt class="docutils literal">type</tt>
+来创建类，但是如果你在类上定义这个字段指向一个 <tt class="docutils literal">callable</tt> 可调用对象，python将会在初使创建类对象后，调用 <tt class="docutils literal">__metaclass__()</tt> 并传
+入类对象，类名，基类列表，以及类型的命名空间字典。</p>
+<p>python2.x中也允许给全局 <tt class="docutils literal">__metaclass__</tt> 赋值, 如果没有在类中声明 <tt class="docutils literal">__metaclass__</tt> 则全局的会被使用。（在python3.x是否有等价的钩子？）</p>
+<p>因此，基本的元类编程就像下面这样：</p>
+<div class="highlight"><pre><span></span>class SimpleMeta1(type):
+ def __init__(cls, name, bases, nmspc):
+     super(SimpleMeta1, cls).__init__(name, bases, nmspc)
+     cls.uses_metaclass = lambda self : "Yes!"
+
+class Simple1(object):
+    __metaclass__ = SimpleMeta1
+    def foo(self): pass
+    @staticmethod
+    def bar(): pass
+
+simple = Simple1()
+print([m for m in dir(simple) if not m.startswith('__')])
+# A new method has been injected by the metaclass:
+print(simple.uses_metaclass())
+
+""" Output:
+['bar', 'foo', 'uses_metaclass']
+Yes!
+"""
+</pre></div>
+<p>在python3.x版本中则是</p>
+<div class="highlight"><pre><span></span>class SimpleMeta1(type):
+ def __init__(cls, name, bases, nmspc):
+     super(SimpleMeta1, cls).__init__(name, bases, nmspc)
+     cls.uses_metaclass = lambda self : "Yes!"
+
+class Simple1(metaclass=SimpleMeta1):
+    def foo(self): pass
+    @staticmethod
+    def bar(): pass
+
+simple = Simple1()
+print([m for m in dir(simple) if not m.startswith('__')])
+# A new method has been injected by the metaclass:
+print(simple.uses_metaclass())
+
+""" Output:
+['bar', 'foo', 'uses_metaclass']
+Yes!
+"""
+</pre></div>
+<p>按照惯例定义元类时除了 <tt class="docutils literal">__new__</tt> 方法外 <tt class="docutils literal">cls</tt> 作为元类上所有方法的第一个参数而不是通常的 <tt class="docutils literal">self</tt> ，原因是 <tt class="docutils literal">__new__</tt> 方法的第一
+个参数是 <tt class="docutils literal">mcl</tt> 原因在下面解释， <tt class="docutils literal">cls</tt> 是要被修改的"类"对象。</p>
+<p>注意在派生类构造方法中首先调用基类的的构造方法（通过 <tt class="docutils literal">super()</tt> ）的做法在元类中也是一样。</p>
+<p>实际上 <tt class="docutils literal">__metaclass__</tt> 需要的是一个 <tt class="docutils literal">callable</tt> 可调用的对象，所以在 python2.x 中可以将 <tt class="docutils literal">__metaclass__</tt> 定义为内联的形式。</p>
+<div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">Simple2</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="k">class</span> <span class="nc">__metaclass__</span><span class="p">(</span><span class="nb">type</span><span class="p">):</span>
+        <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">bases</span><span class="p">,</span> <span class="n">nmspc</span><span class="p">):</span>
+            <span class="c1"># This won't work:</span>
+            <span class="c1"># super(__metaclass__, cls).__init__(name, bases, nmspc)</span>
+            <span class="c1"># Less-flexible specific call:</span>
+            <span class="nb">type</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">bases</span><span class="p">,</span> <span class="n">nmspc</span><span class="p">)</span>
+            <span class="bp">cls</span><span class="o">.</span><span class="n">uses_metaclass</span> <span class="o">=</span> <span class="k">lambda</span> <span class="bp">self</span> <span class="p">:</span> <span class="s2">"Yes!"</span>
+
+<span class="k">class</span> <span class="nc">Simple3</span><span class="p">(</span><span class="n">Simple2</span><span class="p">):</span> <span class="k">pass</span>
+    <span class="n">simple</span> <span class="o">=</span> <span class="n">Simple3</span><span class="p">()</span>
+    <span class="nb">print</span> <span class="n">simple</span><span class="o">.</span><span class="n">uses_metaclass</span><span class="p">()</span>
+
+<span class="sd">""" Output:</span>
+<span class="sd">Yes!</span>
+<span class="sd">"""</span>
+</pre></div>
+<p>注意上例中编译器不会接受 <tt class="docutils literal">super</tt> 的调用, 因为 <tt class="docutils literal">__metaclass__</tt> 尚未定义，这迫使使用 <tt class="docutils literal">type.__init__(cls, name, bases, nmspc)</tt>
+进行特殊的调用。</p>
+<p>因为 <tt class="docutils literal">__metaclass__</tt> 仅仅需要的是一个可调用的对象，所以甚至可以将 <tt class="docutils literal">__metaclass__</tt> 定义为一个函数。</p>
+<div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">Simple4</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__metaclass__</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">bases</span><span class="p">,</span> <span class="n">nmspc</span><span class="p">):</span>
+        <span class="bp">cls</span> <span class="o">=</span> <span class="nb">type</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">bases</span><span class="p">,</span> <span class="n">nmspc</span><span class="p">)</span>
+        <span class="bp">cls</span><span class="o">.</span><span class="n">uses_metaclass</span> <span class="o">=</span> <span class="k">lambda</span> <span class="bp">self</span> <span class="p">:</span> <span class="s2">"Yes!"</span>
+        <span class="k">return</span> <span class="bp">cls</span>
+
+<span class="n">simple</span> <span class="o">=</span> <span class="n">Simple4</span><span class="p">()</span>
+<span class="nb">print</span> <span class="n">simple</span><span class="o">.</span><span class="n">uses_metaclass</span><span class="p">()</span>
+
+<span class="sd">""" Output:</span>
+<span class="sd">Yes!</span>
+<span class="sd">"""</span>
+</pre></div>
+<p>就像你所看到的，在python3.x中不允许最后这两个例子一样的语法。但即使这样，上面的例子已经清楚的展示了元类发生了什么：创建类对象，然后修改，然
+后返回。</p>
+<div class="section" id="python3-x">
+<h3><a class="toc-backref" href="#id11">在python3.x中的元类钩子</a></h3>
+<p>python3.x 改变了元类的钩子，虽然没有禁止类中声明 <tt class="docutils literal">__metaclass__</tt> 字段，但是它会忽略这个字段。取而代之的是，在基类列表中使用一个关键字
+参数。</p>
+<div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">Simple1</span><span class="p">(</span><span class="nb">object</span><span class="p">,</span> <span class="n">metaclass</span> <span class="o">=</span> <span class="n">SimpleMeta1</span><span class="p">):</span>
+   <span class="o">...</span>
+</pre></div>
+<p>这就意味着在python3.x中没有任何直接将 <tt class="docutils literal">__metaclass__</tt> 定义为类或者函数的可能，所有的元类都必须定义为单独的类，这大概是一件好事，它使得
+元类编程更加一致，从而更容易的阅读和理解。</p>
+</div>
+</div>
+<div class="section" id="id4">
+<h2><a class="toc-backref" href="#id12">例子：子类自我注册</a></h2>
+<p>使用继承作为一种组织方式有时候很方便，每一个子类都成为你所处理的组的一个元素，例如 <strong>Language</strong> 可以是所有的语言的一个基类，每种特定的语言
+子类都描述了特定的语言特征。</p>
+<p>要解决这个问题，考虑这样一个系统，它自动保存所有"叶子"子类的一个列表（类没有继承者），通过这种方式我们可以很容易的枚举所有的子类型。</p>
+<div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">RegisterLeafClasses</span><span class="p">(</span><span class="nb">type</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">bases</span><span class="p">,</span> <span class="n">nmspc</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">RegisterLeafClasses</span><span class="p">,</span> <span class="bp">cls</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">bases</span><span class="p">,</span> <span class="n">nmspc</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="s1">'registry'</span><span class="p">):</span>
+            <span class="bp">cls</span><span class="o">.</span><span class="n">registry</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+        <span class="bp">cls</span><span class="o">.</span><span class="n">registry</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span>
+        <span class="bp">cls</span><span class="o">.</span><span class="n">registry</span> <span class="o">-=</span> <span class="nb">set</span><span class="p">(</span><span class="n">bases</span><span class="p">)</span> <span class="c1"># Remove base classes</span>
+    <span class="c1"># Metamethods, called on class objects:</span>
+    <span class="k">def</span> <span class="fm">__iter__</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">iter</span><span class="p">(</span><span class="bp">cls</span><span class="o">.</span><span class="n">registry</span><span class="p">)</span>
+    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">cls</span> <span class="ow">in</span> <span class="bp">cls</span><span class="o">.</span><span class="n">registry</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="vm">__name__</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="vm">__name__</span> <span class="o">+</span> <span class="s2">": "</span> <span class="o">+</span> <span class="s2">", "</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">sc</span><span class="o">.</span><span class="vm">__name__</span> <span class="k">for</span> <span class="n">sc</span> <span class="ow">in</span> <span class="bp">cls</span><span class="p">])</span>
+
+<span class="k">class</span> <span class="nc">Color</span><span class="p">(</span><span class="n">metaclass</span><span class="o">=</span><span class="n">RegisterLeafClasses</span><span class="p">):</span> <span class="k">pass</span>
+
+<span class="k">class</span> <span class="nc">Blue</span><span class="p">(</span><span class="n">Color</span><span class="p">):</span> <span class="k">pass</span>
+<span class="k">class</span> <span class="nc">Red</span><span class="p">(</span><span class="n">Color</span><span class="p">):</span> <span class="k">pass</span>
+<span class="k">class</span> <span class="nc">Green</span><span class="p">(</span><span class="n">Color</span><span class="p">):</span> <span class="k">pass</span>
+<span class="k">class</span> <span class="nc">Yellow</span><span class="p">(</span><span class="n">Color</span><span class="p">):</span> <span class="k">pass</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">Color</span><span class="p">)</span>
+<span class="k">class</span> <span class="nc">PhthaloBlue</span><span class="p">(</span><span class="n">Blue</span><span class="p">):</span> <span class="k">pass</span>
+<span class="k">class</span> <span class="nc">CeruleanBlue</span><span class="p">(</span><span class="n">Blue</span><span class="p">):</span> <span class="k">pass</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">Color</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">Color</span><span class="p">:</span> <span class="c1"># Iterate over subclasses</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">c</span><span class="p">)</span>
+
+<span class="k">class</span> <span class="nc">Shape</span><span class="p">(</span><span class="n">metaclass</span><span class="o">=</span><span class="n">RegisterLeafClasses</span><span class="p">):</span>
+
+<span class="k">class</span> <span class="nc">Round</span><span class="p">(</span><span class="n">Shape</span><span class="p">):</span> <span class="k">pass</span>
+<span class="k">class</span> <span class="nc">Square</span><span class="p">(</span><span class="n">Shape</span><span class="p">):</span> <span class="k">pass</span>
+<span class="k">class</span> <span class="nc">Triangular</span><span class="p">(</span><span class="n">Shape</span><span class="p">):</span> <span class="k">pass</span>
+<span class="k">class</span> <span class="nc">Boxy</span><span class="p">(</span><span class="n">Shape</span><span class="p">):</span> <span class="k">pass</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">Shape</span><span class="p">)</span>
+<span class="k">class</span> <span class="nc">Circle</span><span class="p">(</span><span class="n">Round</span><span class="p">):</span> <span class="k">pass</span>
+<span class="k">class</span> <span class="nc">Ellipse</span><span class="p">(</span><span class="n">Round</span><span class="p">):</span> <span class="k">pass</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">Shape</span><span class="p">)</span>
+
+<span class="sd">""" Output:</span>
+<span class="sd">Color: Red, Blue, Green, Yellow</span>
+<span class="sd">Color: Red, CeruleanBlue, Green, PhthaloBlue, Yellow</span>
+<span class="sd">Red</span>
+<span class="sd">CeruleanBlue</span>
+<span class="sd">Green</span>
+<span class="sd">PhthaloBlue</span>
+<span class="sd">Yellow</span>
+<span class="sd">Shape: Square, Round, Boxy, Triangular</span>
+<span class="sd">Shape: Square, Ellipse, Circle, Boxy, Triangular</span>
+<span class="sd">"""</span>
+</pre></div>
+<p>两个单独的测试代码，表明两个元类的注册中心是相互独立的。每个测试例子，都展示了添加另一个叶类时发生的情况，前一层叶类成为基类，因此从注册表中
+移除。</p>
+<p>上面也引入类元类方法，定义在元类中的方法，以便它们成为"类"对象的方法，也就是说在"类"这个对象而不是类的实例上去调用这些方法，这些方法的第一个
+参数是"类"对象 <tt class="docutils literal">cls</tt> 而不是 <tt class="docutils literal">self</tt> 。</p>
+</div>
+<div class="section" id="final">
+<h2><a class="toc-backref" href="#id13">例子：让类变成 "Final"</a></h2>
+<p>一些情况下需要防止类被继承是很方便的：</p>
+<div class="highlight"><pre><span></span><span class="c1"># Emulating Java's 'final'</span>
+
+<span class="k">class</span> <span class="nc">final</span><span class="p">(</span><span class="nb">type</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">bases</span><span class="p">,</span> <span class="n">namespace</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">final</span><span class="p">,</span> <span class="bp">cls</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">bases</span><span class="p">,</span> <span class="n">namespace</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">klass</span> <span class="ow">in</span> <span class="n">bases</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">klass</span><span class="p">,</span> <span class="n">final</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">klass</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span> <span class="o">+</span> <span class="s2">" is final"</span><span class="p">)</span>
+
+<span class="k">class</span> <span class="nc">A</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="k">pass</span>
+
+<span class="k">class</span> <span class="nc">B</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">metaclass</span><span class="o">=</span><span class="n">final</span><span class="p">):</span> <span class="k">pass</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">B</span><span class="o">.</span><span class="vm">__bases__</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">B</span><span class="p">,</span> <span class="n">final</span><span class="p">))</span>
+
+<span class="c1"># Produces compile-time error:</span>
+<span class="k">class</span> <span class="nc">C</span><span class="p">(</span><span class="n">B</span><span class="p">):</span>
+    <span class="k">pass</span>
+
+<span class="sd">""" Output:</span>
+<span class="sd">(&lt;class '__main__.A'&gt;,)</span>
+<span class="sd">True</span>
+<span class="sd">...</span>
+<span class="sd">TypeError: B is final</span>
+<span class="sd">"""</span>
+</pre></div>
+<p>上面的例子在创建"类"对象时，检查是否有任何的基类派生于 <tt class="docutils literal">final</tt> 注意，使用元类会使新的类型成为这个元类的实例，即使元类没有出现在基类列表中。</p>
+<p>因为这个检查最终结果的过程需要在创建子类时安装，而不是在类装饰器之后执行，所以这似乎是一个需要元类而不能用类装饰器完成的事情的例子。</p>
+</div>
+<div class="section" id="init-new">
+<h2><a class="toc-backref" href="#id14">使用元类的 <tt class="docutils literal">__init__</tt> 还是 <tt class="docutils literal">__new__</tt> 方法</a></h2>
+<p>在看到一些元类任意使用 <tt class="docutils literal">__init__</tt> 和 <tt class="docutils literal">__new__</tt> 的例子时你可能感到困惑，为什么只选择其中一个而不是用另一个。</p>
+<p><tt class="docutils literal">__new__</tt> 在新的"类"对象创建时被调用，然而 <tt class="docutils literal">__init__</tt> 是在类对象被创建后调用，在返回给调用者之前执行额外的初始化操作。</p>
+<div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">pprint</span> <span class="kn">import</span> <span class="n">pprint</span>
+
+<span class="k">class</span> <span class="nc">Tag1</span><span class="p">:</span> <span class="k">pass</span>
+<span class="k">class</span> <span class="nc">Tag2</span><span class="p">:</span> <span class="k">pass</span>
+<span class="k">class</span> <span class="nc">Tag3</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">tag3_method</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span> <span class="k">pass</span>
+
+<span class="k">class</span> <span class="nc">MetaBase</span><span class="p">(</span><span class="nb">type</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__new__</span><span class="p">(</span><span class="n">mcl</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">bases</span><span class="p">,</span> <span class="n">nmspc</span><span class="p">):</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">'MetaBase.__new__</span><span class="se">\n</span><span class="s1">'</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">(</span><span class="n">MetaBase</span><span class="p">,</span> <span class="n">mcl</span><span class="p">)</span><span class="o">.</span><span class="fm">__new__</span><span class="p">(</span><span class="n">mcl</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">bases</span><span class="p">,</span> <span class="n">nmspc</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">bases</span><span class="p">,</span> <span class="n">nmspc</span><span class="p">):</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">'MetaBase.__init__</span><span class="se">\n</span><span class="s1">'</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">MetaBase</span><span class="p">,</span> <span class="bp">cls</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">bases</span><span class="p">,</span> <span class="n">nmspc</span><span class="p">)</span>
+
+<span class="k">class</span> <span class="nc">MetaNewVSInit</span><span class="p">(</span><span class="n">MetaBase</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__new__</span><span class="p">(</span><span class="n">mcl</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">bases</span><span class="p">,</span> <span class="n">nmspc</span><span class="p">):</span>
+        <span class="c1"># First argument is the metaclass ``MetaNewVSInit``</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">'MetaNewVSInit.__new__'</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="p">(</span><span class="n">mcl</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">bases</span><span class="p">,</span> <span class="n">nmspc</span><span class="p">):</span> <span class="n">pprint</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">''</span><span class="p">)</span>
+        <span class="c1"># These all work because the class hasn't been created yet:</span>
+        <span class="k">if</span> <span class="s1">'foo'</span> <span class="ow">in</span> <span class="n">nmspc</span><span class="p">:</span> <span class="n">nmspc</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">'foo'</span><span class="p">)</span>
+        <span class="n">name</span> <span class="o">+=</span> <span class="s1">'_x'</span>
+        <span class="n">bases</span> <span class="o">+=</span> <span class="p">(</span><span class="n">Tag1</span><span class="p">,)</span>
+        <span class="n">nmspc</span><span class="p">[</span><span class="s1">'baz'</span><span class="p">]</span> <span class="o">=</span> <span class="mi">42</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">(</span><span class="n">MetaNewVSInit</span><span class="p">,</span> <span class="n">mcl</span><span class="p">)</span><span class="o">.</span><span class="fm">__new__</span><span class="p">(</span><span class="n">mcl</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">bases</span><span class="p">,</span> <span class="n">nmspc</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">bases</span><span class="p">,</span> <span class="n">nmspc</span><span class="p">):</span>
+        <span class="c1"># First argument is the class being initialized</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">'MetaNewVSInit.__init__'</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">bases</span><span class="p">,</span> <span class="n">nmspc</span><span class="p">):</span> <span class="n">pprint</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">''</span><span class="p">)</span>
+        <span class="k">if</span> <span class="s1">'bar'</span> <span class="ow">in</span> <span class="n">nmspc</span><span class="p">:</span> <span class="n">nmspc</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">'bar'</span><span class="p">)</span> <span class="c1"># No effect</span>
+        <span class="n">name</span> <span class="o">+=</span> <span class="s1">'_y'</span> <span class="c1"># No effect</span>
+        <span class="n">bases</span> <span class="o">+=</span> <span class="p">(</span><span class="n">Tag2</span><span class="p">,)</span> <span class="c1"># No effect</span>
+        <span class="n">nmspc</span><span class="p">[</span><span class="s1">'pi'</span><span class="p">]</span> <span class="o">=</span> <span class="mf">3.14159</span> <span class="c1"># No effect</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">MetaNewVSInit</span><span class="p">,</span> <span class="bp">cls</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">bases</span><span class="p">,</span> <span class="n">nmspc</span><span class="p">)</span>
+        <span class="c1"># These do work because they operate on the class object:</span>
+        <span class="bp">cls</span><span class="o">.</span><span class="vm">__name__</span> <span class="o">+=</span> <span class="s1">'_z'</span>
+        <span class="bp">cls</span><span class="o">.</span><span class="vm">__bases__</span> <span class="o">+=</span> <span class="p">(</span><span class="n">Tag3</span><span class="p">,)</span>
+        <span class="bp">cls</span><span class="o">.</span><span class="n">e</span> <span class="o">=</span> <span class="mf">2.718</span>
+
+<span class="k">class</span> <span class="nc">Test</span><span class="p">(</span><span class="n">metaclass</span><span class="o">=</span><span class="n">MetaNewVSInit</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">'Test.__init__'</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">foo</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span> <span class="nb">print</span><span class="p">(</span><span class="s1">'foo still here'</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">bar</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span> <span class="nb">print</span><span class="p">(</span><span class="s1">'bar still here'</span><span class="p">)</span>
+
+<span class="n">t</span> <span class="o">=</span> <span class="n">Test</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">'class name: '</span> <span class="o">+</span> <span class="n">Test</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">'base classes: '</span><span class="p">,</span> <span class="p">[</span><span class="n">c</span><span class="o">.</span><span class="vm">__name__</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">Test</span><span class="o">.</span><span class="vm">__bases__</span><span class="p">])</span>
+<span class="nb">print</span><span class="p">([</span><span class="n">m</span> <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="nb">dir</span><span class="p">(</span><span class="n">t</span><span class="p">)</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">m</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">"__"</span><span class="p">)])</span>
+<span class="n">t</span><span class="o">.</span><span class="n">bar</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">t</span><span class="o">.</span><span class="n">e</span><span class="p">)</span>
+
+<span class="sd">""" Output:</span>
+<span class="sd">MetaNewVSInit.__new__</span>
+<span class="sd">&lt;class '__main__.MetaNewVSInit'&gt;</span>
+<span class="sd">'Test'</span>
+<span class="sd">(&lt;type 'object'&gt;,)</span>
+<span class="sd">{'__init__': &lt;function __init__ at 0x7ecf0&gt;,</span>
+<span class="sd"> '__metaclass__': &lt;class '__main__.MetaNewVSInit'&gt;,</span>
+<span class="sd"> '__module__': '__main__',</span>
+<span class="sd"> 'bar': &lt;function bar at 0x7ed70&gt;,</span>
+<span class="sd"> 'foo': &lt;function foo at 0x7ed30&gt;}</span>
+
+<span class="sd">MetaBase.__new__</span>
+
+<span class="sd">MetaNewVSInit.__init__</span>
+<span class="sd">&lt;class '__main__.Test_x'&gt;</span>
+<span class="sd">'Test'</span>
+<span class="sd">(&lt;type 'object'&gt;,)</span>
+<span class="sd">{'__init__': &lt;function __init__ at 0x7ecf0&gt;,</span>
+<span class="sd"> '__metaclass__': &lt;class '__main__.MetaNewVSInit'&gt;,</span>
+<span class="sd"> '__module__': '__main__',</span>
+<span class="sd"> 'bar': &lt;function bar at 0x7ed70&gt;,</span>
+<span class="sd"> 'baz': 42}</span>
+
+<span class="sd">MetaBase.__init__</span>
+
+<span class="sd">Test.__init__</span>
+<span class="sd">class name: Test_x_z</span>
+<span class="sd">('base classes: ', ['object', 'Tag1', 'Tag3'])</span>
+<span class="sd">['bar', 'baz', 'e', 'tag3_method']</span>
+<span class="sd">bar still here</span>
+<span class="sd">2.718</span>
+<span class="sd">"""</span>
+</pre></div>
+<p>不过最主要的区别在于当重写（ <tt class="docutils literal">overriding</tt> ） <tt class="docutils literal">__new__()</tt> 方法时你可以在调用父类构造函数之前修改类型的 <strong>name</strong> , <strong>bases</strong> ,
+以及 <strong>namespace</strong> 等参数，这时修改是生效的。但是在 <tt class="docutils literal">__init__</tt> 方法中做同样的事情，修改则不会生效。</p>
+<p>一个特殊的例子是你可以在 <tt class="docutils literal">__new__</tt> 中操作 <tt class="docutils literal">__slot__</tt> 但是在 <tt class="docutils literal">__init__</tt> 中则不行。</p>
+<p>请注意，由于 <tt class="docutils literal">__init__()</tt> 的基类版本没有做任何修改，所以首先调用它，然后执行任何附加操作是有意义的。在c++和Java中，基类构造函数必须作为
+派生类构造函数中的第一个操作调用，这是有意义的，因为派生类构造可以在基类的基础上构建。</p>
+<p>在大多数情况下选择 <tt class="docutils literal">__new__</tt> 或者 <tt class="docutils literal">__init__</tt> 是一个风格问题，并不重要。但因为 <tt class="docutils literal">__new__()</tt> 可以做所有的事情，而 <tt class="docutils literal">__init__()</tt>
+稍微有一些限制，一些人只是开始使用 <tt class="docutils literal">__new__()</tt> 并坚持使用它。这种用法可能会让人困惑——我倾向于寻找 <tt class="docutils literal">__init__()</tt> 被选择的原因，如果
+我找不到它，就会怀疑作者是否知道他们在做什么。我更喜欢只在 <tt class="docutils literal">__new__()</tt> 有意义的时候使用它——当你必须改变只有 <tt class="docutils literal">__new__()</tt> 可以改变的
+东西时。</p>
+</div>
+<div class="section" id="id5">
+<h2><a class="toc-backref" href="#id15">类方法和元类方法</a></h2>
+<p>元类方法可以在元类或者"类"对象中调用，但是不能从"类"对象的实例中调用。</p>
+<p>类方法可以在类上调用或者是类的实例上去调用，但并不是元类的一部分。</p>
+</div>
+<div class="section" id="id6">
+<h2><a class="toc-backref" href="#id16">拦截类的创建</a></h2>
+<p>下面的例子使用元类实现了单例模式（<tt class="docutils literal">Singleton</tt>）通过重写元类 <tt class="docutils literal">__call__</tt> 方法， 这将在"类"对象实例化实例时被调用。</p>
+<div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">Singleton</span><span class="p">(</span><span class="nb">type</span><span class="p">):</span>
+    <span class="n">instance</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">cls</span><span class="o">.</span><span class="n">instance</span><span class="p">:</span>
+             <span class="bp">cls</span><span class="o">.</span><span class="n">instance</span> <span class="o">=</span> <span class="nb">super</span><span class="p">(</span><span class="n">Singleton</span><span class="p">,</span> <span class="bp">cls</span><span class="p">)</span><span class="o">.</span><span class="fm">__call__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">instance</span>
+
+<span class="k">class</span> <span class="nc">ASingleton</span><span class="p">(</span><span class="n">metaclass</span><span class="o">=</span><span class="n">Singleton</span><span class="p">):</span> <span class="k">pass</span>
+
+<span class="n">a</span> <span class="o">=</span> <span class="n">ASingleton</span><span class="p">()</span>
+<span class="n">b</span> <span class="o">=</span> <span class="n">ASingleton</span><span class="p">()</span>
+<span class="k">assert</span> <span class="n">a</span> <span class="ow">is</span> <span class="n">b</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">a</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span> <span class="n">b</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span>
+
+<span class="k">class</span> <span class="nc">BSingleton</span><span class="p">(</span><span class="n">metaclass</span><span class="o">=</span><span class="n">Singleton</span><span class="p">):</span>
+
+<span class="n">c</span> <span class="o">=</span> <span class="n">BSingleton</span><span class="p">()</span>
+<span class="n">d</span> <span class="o">=</span> <span class="n">BSingleton</span><span class="p">()</span>
+<span class="k">assert</span> <span class="n">c</span> <span class="ow">is</span> <span class="n">d</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span> <span class="n">d</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span>
+<span class="k">assert</span> <span class="n">c</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">a</span>
+
+<span class="sd">""" Output:</span>
+<span class="sd">('ASingleton', 'ASingleton')</span>
+<span class="sd">('BSingleton', 'BSingleton')</span>
+<span class="sd">"""</span>
+</pre></div>
+<p>通过在元类上重写 <tt class="docutils literal">__call__</tt> 方法，将拦截"类"对象的实例创建过程，如果类的 <tt class="docutils literal">instance</tt> 已被创建，则再次实例化时会跳过实例化过程。
+注意上面对元类静态字段 <tt class="docutils literal">instance</tt> 行为的依赖, 当 <tt class="docutils literal">cls.instance</tt> 第一次被读取时，它的值取自元类的静态字段 <tt class="docutils literal">instance</tt> 为 <tt class="docutils literal">None</tt>
+当之后进行赋值时，python会为特定的类创建一个本地的版本，下次读取则是从 <tt class="docutils literal">cls.instance</tt> 类的本地版本中读取值。由于这种行为，每个类最终都
+有自己的特定于类的实例字段(因此实例并没有从元类中“继承”)。</p>
+<div class="section" id="id7">
+<h3><a class="toc-backref" href="#id17">类装饰器实现的单例</a></h3>
+<div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">singleton</span><span class="p">(</span><span class="n">klass</span><span class="p">):</span>
+    <span class="s2">"Simple replacement of object creation operation"</span>
+    <span class="k">def</span> <span class="nf">getinstance</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">klass</span><span class="p">,</span> <span class="s1">'instance'</span><span class="p">):</span>
+            <span class="n">klass</span><span class="o">.</span><span class="n">instance</span> <span class="o">=</span> <span class="n">klass</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">klass</span><span class="o">.</span><span class="n">instance</span>
+    <span class="k">return</span> <span class="n">getinstance</span>
+
+<span class="k">def</span> <span class="nf">singleton</span><span class="p">(</span><span class="n">klass</span><span class="p">):</span>
+    <span class="sd">"""</span>
+<span class="sd">    More powerful approach: Change the behavior</span>
+<span class="sd">    of the instances AND the class object.</span>
+<span class="sd">    """</span>
+    <span class="k">class</span> <span class="nc">Decorated</span><span class="p">(</span><span class="n">klass</span><span class="p">):</span>
+        <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+            <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">klass</span><span class="p">,</span> <span class="s1">'__init__'</span><span class="p">):</span>
+                <span class="n">klass</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="p">:</span> <span class="k">return</span> <span class="n">klass</span><span class="o">.</span><span class="vm">__name__</span> <span class="o">+</span> <span class="s2">" obj"</span>
+        <span class="fm">__str__</span> <span class="o">=</span> <span class="fm">__repr__</span>
+    <span class="n">Decorated</span><span class="o">.</span><span class="vm">__name__</span> <span class="o">=</span> <span class="n">klass</span><span class="o">.</span><span class="vm">__name__</span>
+    <span class="k">class</span> <span class="nc">ClassObject</span><span class="p">:</span>
+        <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
+            <span class="bp">cls</span><span class="o">.</span><span class="n">instance</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">klass</span><span class="o">.</span><span class="vm">__name__</span>
+        <span class="fm">__str__</span> <span class="o">=</span> <span class="fm">__repr__</span>
+        <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+            <span class="nb">print</span> <span class="nb">str</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">+</span> <span class="s2">" __call__ "</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">cls</span><span class="o">.</span><span class="n">instance</span><span class="p">:</span>
+                <span class="bp">cls</span><span class="o">.</span><span class="n">instance</span> <span class="o">=</span> <span class="n">Decorated</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">instance</span>
+    <span class="k">return</span> <span class="n">ClassObject</span><span class="p">()</span>
+
+<span class="nd">@singleton</span>
+<span class="k">class</span> <span class="nc">ASingleton</span><span class="p">:</span> <span class="k">pass</span>
+
+<span class="n">a</span> <span class="o">=</span> <span class="n">ASingleton</span><span class="p">()</span>
+<span class="n">b</span> <span class="o">=</span> <span class="n">ASingleton</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">)</span>
+<span class="nb">print</span> <span class="n">a</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span>
+<span class="nb">print</span> <span class="n">ASingleton</span>
+<span class="k">assert</span> <span class="n">a</span> <span class="ow">is</span> <span class="n">b</span>
+
+<span class="nd">@singleton</span>
+<span class="k">class</span> <span class="nc">BSingleton</span><span class="p">:</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="n">x</span>
+
+<span class="n">c</span> <span class="o">=</span> <span class="n">BSingleton</span><span class="p">(</span><span class="mi">11</span><span class="p">)</span>
+<span class="n">d</span> <span class="o">=</span> <span class="n">BSingleton</span><span class="p">(</span><span class="mi">22</span><span class="p">)</span>
+<span class="k">assert</span> <span class="n">c</span> <span class="ow">is</span> <span class="n">d</span>
+<span class="k">assert</span> <span class="n">c</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">a</span>
+
+<span class="sd">""" Output:</span>
+<span class="sd">ASingleton __call__</span>
+<span class="sd">ASingleton __call__</span>
+<span class="sd">(ASingleton obj, ASingleton obj)</span>
+<span class="sd">ASingleton</span>
+<span class="sd">ASingleton</span>
+<span class="sd">BSingleton __call__</span>
+<span class="sd">BSingleton __call__</span>
+<span class="sd">"""</span>
+</pre></div>
+</div>
+<div class="section" id="prepare">
+<h3><a class="toc-backref" href="#id18"><tt class="docutils literal">__prepare__()</tt> 元类方法</a></h3>
+<p>使用类装饰器不能做的一件事是替换默认字典。在Python 3中，这是通过 <tt class="docutils literal">__prepare__()</tt> 元方法启用的:</p>
+<div class="highlight"><pre><span></span><span class="nd">@classmethod</span>
+<span class="k">def</span> <span class="fm">__prepare__</span><span class="p">(</span><span class="n">mcl</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">bases</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">odict</span><span class="p">()</span>
+</pre></div>
+<p>对于在元类中同时使用 <tt class="docutils literal">__prepare__()</tt> 和 <tt class="docutils literal">__slot__()</tt> 的例子，请前往 <a class="reference external" href="https://www.artima.com/weblogs/viewpost.jsp?thread=236260">Michele Simionato’s article</a></p>
+</div>
+</div>
+<div class="section" id="metaclass">
+<h2><a class="toc-backref" href="#id19">metaclass 冲突</a></h2>
+<p>注意，<tt class="docutils literal">metaclass</tt> 参数是单数的——你不能给一个类附加一个以上的元类。然而通过多重继承，可能会意外地得到多个元类，这将产生必须解决的冲突。</p>
+<p><a class="reference external" href="http://code.activestate.com/recipes/204197/">http://code.activestate.com/recipes/204197/</a></p>
+</div>
+<div class="section" id="id8">
+<h2><a class="toc-backref" href="#id20">进一步阅读</a></h2>
+<p><strong>Excellent step-by-step introduction to metaclasses</strong>:</p>
+<p><a class="reference external" href="http://cleverdevil.org/computing/78/">http://cleverdevil.org/computing/78/</a></p>
+<p><strong>Metaclass intro and comparison of syntax between Python 2.x and 3.x</strong>:</p>
+<p><a class="reference external" href="http://mikewatkins.ca/2008/11/29/python-2-and-3-metaclasses/">http://mikewatkins.ca/2008/11/29/python-2-and-3-metaclasses/</a></p>
+<p><strong>David Mertz’s metaclass primer</strong>:</p>
+<p><a class="reference external" href="http://www.onlamp.com/pub/a/python/2003/04/17/metaclasses.html">http://www.onlamp.com/pub/a/python/2003/04/17/metaclasses.html</a></p>
+<p><strong>Three-part in-depth coverage of metaclasses on IBM Developer Works. Quite useful and authoritative</strong>:</p>
+<ul class="simple">
+<li><a class="reference external" href="http://www.ibm.com/developerworks/linux/library/l-pymeta.html">http://www.ibm.com/developerworks/linux/library/l-pymeta.html</a></li>
+<li><a class="reference external" href="http://www.ibm.com/developerworks/linux/library/l-pymeta2/">http://www.ibm.com/developerworks/linux/library/l-pymeta2/</a></li>
+<li><a class="reference external" href="http://www.ibm.com/developerworks/linux/library/l-pymeta3.html">http://www.ibm.com/developerworks/linux/library/l-pymeta3.html</a></li>
+</ul>
+<p><strong>Michele Simionato’s articles on Artima, with special emphasis on the difference between Python 2.x and 3.x metaclasses</strong>:</p>
+<ul class="simple">
+<li><a class="reference external" href="http://www.artima.com/weblogs/viewpost.jsp?thread=236234">http://www.artima.com/weblogs/viewpost.jsp?thread=236234</a></li>
+<li><a class="reference external" href="http://www.artima.com/weblogs/viewpost.jsp?thread=236260">http://www.artima.com/weblogs/viewpost.jsp?thread=236260</a></li>
+</ul>
+<p>一旦你理解了这些基础，你可以通过关键字 <tt class="docutils literal">metaclass</tt> 在 <a class="reference external" href="http://code.activestate.com/recipes/langs/python/">Python Cookbook: http://code.activestate.com/recipes/langs/python/</a>
+上搜索到大量的例子。</p>
+<p><tt class="docutils literal">Python Cookbook</tt> 的印刷版比在线版的示例要少得多，但是印刷版经过了过滤和编辑，因此往往更权威。</p>
+<p><strong>Ian Bicking writes about metaclasses</strong>:</p>
+<ul class="simple">
+<li><a class="reference external" href="http://blog.ianbicking.org/a-conservative-metaclass.html">http://blog.ianbicking.org/a-conservative-metaclass.html</a></li>
+<li><a class="reference external" href="http://blog.ianbicking.org/metaclass-fun.html">http://blog.ianbicking.org/metaclass-fun.html</a></li>
+<li><a class="reference external" href="http://blog.ianbicking.org/A-Declarative-Syntax-Extension.html">http://blog.ianbicking.org/A-Declarative-Syntax-Extension.html</a></li>
+<li><a class="reference external" href="http://blog.ianbicking.org/self-take-two.html">http://blog.ianbicking.org/self-take-two.html</a></li>
+</ul>
+<p>大量关于类、类型、元类等的有用信息，包括Python 2.2文档中的历史信息(在后续版本的文档中是否重复):</p>
+<p><a class="reference external" href="http://www.python.org/download/releases/2.2/descrintro/">http://www.python.org/download/releases/2.2/descrintro/</a></p>
+<p>对于更高级的学习，请参阅 <a class="reference external" href="https://www.pearson.com/us/404-page-not-found.html">Putting Metaclasses to Work</a> 一书。</p>
+</div>
+
+
+
+            
+            
+
+
+
+
+
+
+<section>
+    <h6 style="display:none;">Comments</h6>
+    <p id="comment-message">在这里留下你的评论，请文明发言 ☆⌒(*＾-゜)v THX!! </p>
+
+    <div class="accordion" id="accordion2">
+        <div class="accordion-group">
+            <div class="accordion-heading">
+                <a class="accordion-toggle disqus-comment-count comment-count"
+                   data-toggle="collapse"
+                   data-parent="#accordion2"
+                   href="/MetaClassProgramming#comment_thread"
+                   id="comment-accordion-toggle">
+                    Comments
+                </a>
+            </div>
+            <div id="comment_thread" class="accordion-body collapse">
+                <div class="accordion-inner">
+                    <div class="comments">
+
+                        <script src="https://utteranc.es/client.js"
+        data-repo="dryprojects/dryblog.comments"
+        data-issue-term="/MetaClassProgramming"
+        data-label="comment"
+        data-theme=""
+        crossorigin="anonymous"
+        async>
+</script>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+            <hr/>
+<section>
+    <h2>Keep Reading</h2>
+<ul class="related-posts-list">
+<li><a href="/bloomfilter" title="高效去重算法Bloomfilter">高效去重算法Bloomfilter</a></li>
+<li><a href="/scrapyredis-bloomfilter" title="ScrapyRedis集成Bloomfilter">ScrapyRedis集成Bloomfilter</a></li>
+</ul>
+<hr />
+</section>
+            <aside>
+            <nav>
+            <ul class="articles-timeline">
+                <li class="previous-article">« <a href="/git_config" title="Previous: 常见 git 别名配置">常见 git 别名配置</a></li>
+            </ul>
+            </nav>
+            </aside>
+        </div>
+        <section>
+        <div class="span2" style="float:right;font-size:0.9em;">
+            <h4>Published</h4>
+            <time itemprop="dateCreated" datetime="2021-04-10T13:47:00+08:00"> 4 10, 2021</time>
+
+            <h4>Category</h4>
+            <a class="category-link" href="/categories#python-ref">Python</a>
+            <h4>Tags</h4>
+            <ul class="list-of-tags tags-in-article">
+                <li><a href="/tags#python-ref">python
+                    <span>3</span>
+</a></li>
+            </ul>
+            
+
+
+
+
+
+            
+
+
+
+
+
+        </div>
+        </section>
+</div>
+</article>
+                    </div>
+                    <div class="span1"></div>
+                </div>
+            </div>
+        </div>
+<footer>
+    <div>
+        Content licensed under <a rel="license"
+    href="http://creativecommons.org/licenses/by/4.0/" target="_blank">
+    Creative Commons Attribution 4.0 International License</a>.
+    </div>
+
+    <div>
+        <span class="site-name">Nico'sBlog (｡･∀･)ﾉﾞ</span> - Life is short, you need python.
+    </div>
+
+
+
+    <div id="fpowered">
+        Copyright (c) 2019-2021 Nico'Blog All Rights Revered
+    </div>
+</footer>            <!--script src="//code.jquery.com/jquery.min.js"></script-->
+        <!--script src="//netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/js/bootstrap.min.js"></script-->
+        <script src="/theme/jquery/jquery.min.js"></script>
+        <script src="/theme/bootstrap/js/bootstrap.min.js"></script>
+        <script>
+            function validateForm(query)
+            {
+                return (query.length > 0);
+            }
+        </script>
+
+    <script>
+    (function () {
+        if (window.location.hash.match(/^#comment-\d+$/)) {
+            $('#comment_thread').collapse('show');
+        }
+    })();
+    window.onhashchange=function(){
+        if (window.location.hash.match(/^#comment-\d+$/))
+            window.location.reload(true);
+    }
+    $('#comment_thread').on('shown', function () {
+        var link = document.getElementById('comment-accordion-toggle');
+        var old_innerHTML = link.innerHTML;
+        $(link).fadeOut(200, function() {
+            $(this).text('Click here to hide comments').fadeIn(200);
+        });
+        $('#comment_thread').on('hidden', function () {
+            $(link).fadeOut(200, function() {
+                $(this).text(old_innerHTML).fadeIn(200);
+            });
+        })
+    })
+</script>
+
+    </body>
+    <!-- Theme: Elegant built for Pelican
+        License : MIT -->
+</html>
