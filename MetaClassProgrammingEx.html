@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="author" content="nico" />
+
+        <meta name="description" content="MetaClassProgramming In Practice
+" />
+        <meta property="og:type" content="article" />
+        <meta name="twitter:card" content="summary">
+
+<meta name="keywords" content="python, Python, " />
+
+<meta property="og:title" content="python元类编程(二) "/>
+<meta property="og:url" content="/MetaClassProgrammingEx" />
+<meta property="og:description" content="MetaClassProgramming In Practice" />
+<meta property="og:site_name" content="Nico&#39;sBlog (｡･∀･)ﾉﾞ" />
+<meta property="og:article:author" content="nico" />
+<meta property="og:article:published_time" content="2021-04-11T17:16:00+08:00" />
+<meta property="og:article:modified_time" content="2021-04-11T17:16:00+08:00" />
+<meta name="twitter:title" content="python元类编程(二) ">
+<meta name="twitter:description" content="MetaClassProgramming In Practice">
+
+        <title>python元类编程(二)  · Nico&#39;sBlog (｡･∀･)ﾉﾞ
+</title>
+        <!--link href="//netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/css/bootstrap-combined.min.css" rel="stylesheet"-->
+        <link href="/theme/bootstrap/css/bootstrap.min.css" rel="stylesheet" type="text/css">
+<link rel="stylesheet" href="/theme/css/style.min.css?e83b4deb">
+
+
+
+    </head>
+    <body>
+        <div id="content">
+            <div class="navbar navbar-static-top">
+                <div class="navbar-inner">
+                    <div class="container-fluid">
+                        <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+                            <span class="icon-bar"></span>
+                            <span class="icon-bar"></span>
+                            <span class="icon-bar"></span>
+                        </a>
+                        <a class="brand" href="/"><span class=site-name>Nico'sBlog (｡･∀･)ﾉﾞ</span></a>
+                        <div class="nav-collapse collapse">
+                            <ul class="nav pull-right top-menu">
+                                <li >
+                                    <a href=
+                                       "/"
+                                    >Home</a>
+                                </li>
+                                <li ><a href="/categories">Categories</a></li>
+                                <li ><a href="/tags">Tags</a></li>
+                                <li ><a href="/archives">Archives</a></li>
+                                <li><form class="navbar-search" action="/search" onsubmit="return validateForm(this.elements['q'].value);"> <input type="text" class="search-query" placeholder="Search" name="q" id="tipue_search_input"></form></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="container-fluid">
+                <div class="row-fluid">
+                    <div class="span1"></div>
+                    <div class="span10">
+<article itemscope>
+<div class="row-fluid">
+    <header class="page-header span10 offset2">
+        <h1>
+            <a href="/MetaClassProgrammingEx">
+                python元类编程(二)
+            </a>
+        </h1>
+    </header>
+</div>
+
+<div class="row-fluid">
+    <div class="span2 table-of-content">
+        <nav>
+        <h4>Contents</h4>
+        <div class="toc" id="">
+<p class="topic-title">目录</p>
+<ul class="simple">
+<li><a class="reference internal" href="#django-orm" id="id8">例子：使用元类实现类似 <tt class="docutils literal">Django</tt> 中的 <tt class="docutils literal">ORM</tt> 系统</a><ul>
+<li><a class="reference internal" href="#id3" id="id9">关于数据表中字段的抽象</a></li>
+<li><a class="reference internal" href="#id6" id="id10">数据模型的抽象</a></li>
+<li><a class="reference internal" href="#id7" id="id11">来使用一下我们的模型</a></li>
+</ul>
+</li>
+</ul>
+</div>
+        </nav>
+    </div>
+    <div class="span8 article-content">
+            
+            
+<div class="admonition note">
+<p class="first admonition-title">注解</p>
+<p>这篇文章着重元类实践</p>
+<p class="last">有关元类基础介绍参考上部 <a class="reference external" href="/MetaClassProgramming">《python元类编程(一)》</a>
+该文使用示例 python3.9 编码</p>
+</div>
+<div class="section" id="django-orm">
+<h2><a class="toc-backref" href="#id8">例子：使用元类实现类似 <tt class="docutils literal">Django</tt> 中的 <tt class="docutils literal">ORM</tt> 系统</a></h2>
+<p><tt class="docutils literal">django</tt> 框架有着良好的设计，其中自带的 <tt class="docutils literal">ORM</tt> 框架非常容易上手，那么如何实现一个类似 <tt class="docutils literal">django</tt> 中 <tt class="docutils literal">ORM</tt> 框架的系统呢？假如我们
+需要实现的只是一小部分功能，例 <tt class="docutils literal">user = <span class="pre">User(name='nico',</span> age=27); user.save()</tt> 最终希望打印出存储的 <tt class="docutils literal">sql</tt> 语句。观察 <tt class="docutils literal">django</tt>
+中的 <tt class="docutils literal">model</tt> 组织形式，会发现所有的模型都继承于同一个基类 <tt class="docutils literal">Model</tt> 并在模型中定义数据表的映射关系，通过模型内置的 <tt class="docutils literal">Meta</tt> 来定义关
+于数据表的一些元信息。</p>
+<div class="section" id="id3">
+<h3><a class="toc-backref" href="#id9">关于数据表中字段的抽象</a></h3>
+<p>首先我们需要抽象数据表的字段，这里需要使用类属性来声明出数据表的字段，并需要用到 <tt class="docutils literal">python</tt> 中的
+<a class="reference external" href="https://docs.python.org/3/reference/datamodel.html?highlight=__get#implementing-descriptors">数据描述符</a></p>
+<p>关于数据描述符的使用参考 <a class="reference external" href="https://docs.python.org/3/reference/datamodel.html?highlight=__get#invoking-descriptors">调用数据描述符</a></p>
+<div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">numbers</span>
+
+
+<span class="k">class</span> <span class="nc">Field</span><span class="p">:</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">column_name</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">column_name</span> <span class="o">=</span> <span class="n">column_name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_value</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">def</span> <span class="fm">__get__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">instance</span><span class="p">,</span> <span class="n">owner</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_value</span>
+
+    <span class="k">def</span> <span class="fm">__set__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">instance</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_value</span> <span class="o">=</span> <span class="n">value</span>
+
+
+<span class="k">class</span> <span class="nc">IntegerField</span><span class="p">(</span><span class="n">Field</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">column_name</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">column_name</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__get__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">instance</span><span class="p">,</span> <span class="n">owner</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">'in descriptor __get__'</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_value</span>
+
+    <span class="k">def</span> <span class="fm">__set__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">instance</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">'in descriptor __set__'</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">numbers</span><span class="o">.</span><span class="n">Integral</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">'expect int value'</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_value</span> <span class="o">=</span> <span class="n">value</span>
+
+
+<span class="k">class</span> <span class="nc">CharField</span><span class="p">(</span><span class="n">Field</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">max_length</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">column_name</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">column_name</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">max_length</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s1"> must set max_length'</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_length</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">max_length</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__get__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">instance</span><span class="p">,</span> <span class="n">owner</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__set__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">instance</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_value</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+</pre></div>
+<p>上例中所有字段的基类 <tt class="docutils literal">Field</tt> 是一个数据描述符，派生字段类中可以去做数据相关的校验，我用 <tt class="docutils literal">column_name</tt> 表示数据库中的列名, 通过描述
+符的 <tt class="docutils literal">_value</tt> 属性来存放数据列的值, 这样也可以校验字段的类型，长度等只和字段耦合的东西。</p>
+</div>
+<div class="section" id="id6">
+<h3><a class="toc-backref" href="#id10">数据模型的抽象</a></h3>
+<p>有了数据字段后，接下来我们需要处理数据模型，给数据模型加上一些操作。这里我们定义元类来收集用户自定义模型的字段信息，以及关于数据表的元信息。</p>
+<div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">ModelBase</span><span class="p">(</span><span class="nb">type</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">bases</span><span class="p">,</span> <span class="n">namespc</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">bases</span><span class="p">,</span> <span class="n">namespc</span><span class="p">)</span>
+        <span class="n">meta</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">fields</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">field_name</span><span class="p">,</span> <span class="n">field</span> <span class="ow">in</span> <span class="n">namespc</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">field</span><span class="p">,</span> <span class="n">Field</span><span class="p">):</span>
+                <span class="n">fields</span><span class="p">[</span><span class="n">field_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span>
+
+        <span class="n">meta</span><span class="p">[</span><span class="s1">'fields'</span><span class="p">]</span> <span class="o">=</span> <span class="n">fields</span>
+        <span class="n">db_table</span> <span class="o">=</span> <span class="n">name</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+        <span class="n">meta</span><span class="p">[</span><span class="s1">'db_table'</span><span class="p">]</span> <span class="o">=</span> <span class="n">db_table</span>
+
+        <span class="n">cls_meta</span> <span class="o">=</span> <span class="n">namespc</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'Meta'</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">cls_meta</span><span class="p">:</span>
+            <span class="n">db_table</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">cls_meta</span><span class="p">,</span> <span class="s1">'db_table'</span><span class="p">,</span> <span class="n">db_table</span><span class="p">)</span>
+            <span class="n">meta</span><span class="p">[</span><span class="s1">'db_table'</span><span class="p">]</span> <span class="o">=</span> <span class="n">db_table</span>
+
+        <span class="bp">cls</span><span class="o">.</span><span class="n">_meta</span> <span class="o">=</span> <span class="n">meta</span>  <span class="c1"># set meta data</span>
+
+
+<span class="k">class</span> <span class="nc">Model</span><span class="p">(</span><span class="n">metaclass</span><span class="o">=</span><span class="n">ModelBase</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">attr_name</span><span class="p">,</span> <span class="n">attr_value</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attr_name</span><span class="p">,</span> <span class="n">attr_value</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">save</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">fields</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">field_values</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">field_name</span><span class="p">,</span> <span class="n">field</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_meta</span><span class="p">[</span><span class="s1">'fields'</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">db_column_name</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">field</span><span class="p">,</span> <span class="s1">'column_name'</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">or</span> <span class="n">field_name</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+            <span class="n">fields</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">db_column_name</span><span class="p">)</span>
+            <span class="n">db_column_value</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">field_name</span><span class="p">)</span>
+            <span class="n">field_values</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">db_column_value</span><span class="p">)</span> <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">db_column_value</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">else</span> <span class="nb">repr</span><span class="p">(</span><span class="n">db_column_value</span><span class="p">))</span>
+
+        <span class="n">raw_sql</span> <span class="o">=</span> <span class="s2">"INSERT INTO </span><span class="si">{db_table}</span><span class="s2"> (</span><span class="si">{fields}</span><span class="s2">) VALUES(</span><span class="si">{field_values}</span><span class="s2">)"</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+            <span class="n">db_table</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_meta</span><span class="p">[</span><span class="s1">'db_table'</span><span class="p">],</span>
+            <span class="n">fields</span><span class="o">=</span><span class="s2">","</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">fields</span><span class="p">),</span>
+            <span class="n">field_values</span><span class="o">=</span><span class="s2">","</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">field_values</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">raw_sql</span><span class="p">)</span>
+</pre></div>
+<p>上面通过元类为模型注入了一个 <tt class="docutils literal">_meta</tt> 的属性字典，包含了用户自定义的数据字段，以及数据表信息等。然后在用户的模型基类上定义了 <tt class="docutils literal">save()</tt>
+方法来打印出最终的数据库 <tt class="docutils literal">sql</tt> 语句。</p>
+</div>
+<div class="section" id="id7">
+<h3><a class="toc-backref" href="#id11">来使用一下我们的模型</a></h3>
+<div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">User</span><span class="p">(</span><span class="n">Model</span><span class="p">):</span>
+    <span class="n">age</span> <span class="o">=</span> <span class="n">IntegerField</span><span class="p">()</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="n">CharField</span><span class="p">(</span><span class="n">max_length</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span> <span class="n">column_name</span><span class="o">=</span><span class="s1">'username'</span><span class="p">)</span>
+
+    <span class="k">class</span> <span class="nc">Meta</span><span class="p">:</span>
+        <span class="n">db_table</span> <span class="o">=</span> <span class="s1">'user'</span>
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">'__main__'</span><span class="p">:</span>
+    <span class="n">u</span> <span class="o">=</span> <span class="n">User</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">'nico'</span><span class="p">,</span> <span class="n">age</span><span class="o">=</span><span class="mi">27</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">u</span><span class="o">.</span><span class="n">age</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">u</span><span class="p">)</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">[</span><span class="s1">'name'</span><span class="p">]</span><span class="o">.</span><span class="fm">__get__</span><span class="p">(</span><span class="n">u</span><span class="p">,</span> <span class="n">User</span><span class="p">))</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">u</span><span class="o">.</span><span class="n">_meta</span><span class="p">)</span>
+    <span class="n">u</span><span class="o">.</span><span class="n">save</span><span class="p">()</span>
+    <span class="sd">"""Output:</span>
+<span class="sd">    in descriptor __set__</span>
+<span class="sd">    in descriptor __get__</span>
+<span class="sd">    27</span>
+<span class="sd">    nico</span>
+<span class="sd">    {'fields': {'age': &lt;__main__.IntegerField object at 0x7f88d722a760&gt;, 'name': &lt;__main__.CharField object at 0x7f88d722a7f0&gt;}, 'db_table': 'user'}</span>
+<span class="sd">    in descriptor __get__</span>
+<span class="sd">    INSERT INTO user (age,username) VALUES(27,'nico')</span>
+<span class="sd">    """</span>
+</pre></div>
+<p>这里用户自定义的模型只需要从 <tt class="docutils literal">Model</tt> 继承下来，然后结合我们抽象的字段,定义出数据表的列。 最终 <tt class="docutils literal">save()</tt> 你会发现生成我们需要的 <tt class="docutils literal">sql</tt>
+这种借助元类的能力设计模型的方式能很好的解耦系统，更好的维护各个模块。</p>
+</div>
+</div>
+
+
+
+            
+            
+
+
+
+
+
+
+<section>
+    <h6 style="display:none;">Comments</h6>
+    <p id="comment-message">在这里留下你的评论，请文明发言 ☆⌒(*＾-゜)v THX!! </p>
+
+    <div class="accordion" id="accordion2">
+        <div class="accordion-group">
+            <div class="accordion-heading">
+                <a class="accordion-toggle disqus-comment-count comment-count"
+                   data-toggle="collapse"
+                   data-parent="#accordion2"
+                   href="/MetaClassProgrammingEx#comment_thread"
+                   id="comment-accordion-toggle">
+                    Comments
+                </a>
+            </div>
+            <div id="comment_thread" class="accordion-body collapse">
+                <div class="accordion-inner">
+                    <div class="comments">
+
+                        <script src="https://utteranc.es/client.js"
+        data-repo="dryprojects/dryblog.comments"
+        data-issue-term="/MetaClassProgrammingEx"
+        data-label="comment"
+        data-theme=""
+        crossorigin="anonymous"
+        async>
+</script>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+            <hr/>
+<section>
+    <h2>Keep Reading</h2>
+<ul class="related-posts-list">
+<li><a href="/bloomfilter" title="高效去重算法Bloomfilter">高效去重算法Bloomfilter</a></li>
+<li><a href="/scrapyredis-bloomfilter" title="ScrapyRedis集成Bloomfilter">ScrapyRedis集成Bloomfilter</a></li>
+<li><a href="/MetaClassProgramming" title="Python元类编程(一)">Python元类编程(一)</a></li>
+</ul>
+<hr />
+</section>
+            <aside>
+            <nav>
+            <ul class="articles-timeline">
+                <li class="previous-article">« <a href="/MetaClassProgramming" title="Previous: Python元类编程(一)">Python元类编程(一)</a></li>
+            </ul>
+            </nav>
+            </aside>
+        </div>
+        <section>
+        <div class="span2" style="float:right;font-size:0.9em;">
+            <h4>Published</h4>
+            <time itemprop="dateCreated" datetime="2021-04-11T17:16:00+08:00"> 4 11, 2021</time>
+
+            <h4>Category</h4>
+            <a class="category-link" href="/categories#python-ref">Python</a>
+            <h4>Tags</h4>
+            <ul class="list-of-tags tags-in-article">
+                <li><a href="/tags#python-ref">python
+                    <span>4</span>
+</a></li>
+            </ul>
+            
+
+
+
+
+
+            
+
+
+
+
+
+        </div>
+        </section>
+</div>
+</article>
+                    </div>
+                    <div class="span1"></div>
+                </div>
+            </div>
+        </div>
+<footer>
+    <div>
+        Content licensed under <a rel="license"
+    href="http://creativecommons.org/licenses/by/4.0/" target="_blank">
+    Creative Commons Attribution 4.0 International License</a>.
+    </div>
+
+    <div>
+        <span class="site-name">Nico'sBlog (｡･∀･)ﾉﾞ</span> - Life is short, you need python.
+    </div>
+
+
+
+    <div id="fpowered">
+        Copyright (c) 2019-2021 Nico'Blog All Rights Revered
+    </div>
+</footer>            <!--script src="//code.jquery.com/jquery.min.js"></script-->
+        <!--script src="//netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/js/bootstrap.min.js"></script-->
+        <script src="/theme/jquery/jquery.min.js"></script>
+        <script src="/theme/bootstrap/js/bootstrap.min.js"></script>
+        <script>
+            function validateForm(query)
+            {
+                return (query.length > 0);
+            }
+        </script>
+
+    <script>
+    (function () {
+        if (window.location.hash.match(/^#comment-\d+$/)) {
+            $('#comment_thread').collapse('show');
+        }
+    })();
+    window.onhashchange=function(){
+        if (window.location.hash.match(/^#comment-\d+$/))
+            window.location.reload(true);
+    }
+    $('#comment_thread').on('shown', function () {
+        var link = document.getElementById('comment-accordion-toggle');
+        var old_innerHTML = link.innerHTML;
+        $(link).fadeOut(200, function() {
+            $(this).text('Click here to hide comments').fadeIn(200);
+        });
+        $('#comment_thread').on('hidden', function () {
+            $(link).fadeOut(200, function() {
+                $(this).text(old_innerHTML).fadeIn(200);
+            });
+        })
+    })
+</script>
+
+    </body>
+    <!-- Theme: Elegant built for Pelican
+        License : MIT -->
+</html>
